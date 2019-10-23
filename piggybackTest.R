@@ -1,7 +1,6 @@
 ##Piggyback fiddling
 
 library(piggyback)
-Sys.setenv(GITHUB_TOKEN="7423a37de1b5d3913210273a64d0d89e65e5c8f9")
 
 #For more info throughout this, see
 #https://cran.r-project.org/web/packages/piggyback/vignettes/intro.html
