@@ -78,3 +78,11 @@ PT1
 
 #has all 7 rows. So you "push" by just re-uploading
 #something with the same file name to the release
+
+
+###----------------------
+#Actual uploads of HR and YOS datasets to a new release
+pb_new_release(tag="data.v.1")
+
+pb_upload("specimens-yos.csv",tag="data.v.1")
+pb_upload("specimens-hr.RData",tag="data.v.1")
