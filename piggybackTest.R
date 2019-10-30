@@ -1,7 +1,13 @@
 ##Piggyback fiddling
 
 library(piggyback)
-Sys.getenv(GITHUB_TOKEN="7423a37de1b5d3913210273a64d0d89e65e5c8f9")
+
+##to authenticate:
+#usethis::edit_r_environ() #will open the environment doc. Add this:
+#GITHUB_PAT=7423a37de1b5d3913210273a64d0d89e65e5c8f9
+  #Then save and close that doc. Restart R and run from below
+
+Sys.getenv("GITHUB_PAT")
 
 #For more info throughout this, see
 #https://cran.r-project.org/web/packages/piggyback/vignettes/intro.html
@@ -82,8 +88,11 @@ PT1
 
 
 ###----------------------
-#Actual uploads of HR and YOS datasets to a new release
-pb_new_release(tag="data.v.1")
+##Actual uploads of HR and YOS datasets to a new release
+#pb_new_release(tag="data.v.1")
 
-pb_upload("specimens-yos.csv",tag="data.v.1")
-pb_upload("specimens-hr.RData",tag="data.v.1")
+#pb_upload("specimens-yos.csv",tag="data.v.1")
+#pb_upload("specimens-hr.RData",tag="data.v.1")
+
+pb_download("specimens-yos.csv",tag="data.v.1")
+pb_download("specimens-hr.RData",tag="data.v.1")
