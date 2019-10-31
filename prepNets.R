@@ -31,6 +31,28 @@ breakNet <- function(spec.dat, site, year){
   return(comms)
 }
 
+breakNetSex <- function(spec.dat, site, year){
+  ## puts data together in a list and removes empty matrices
+  agg.spec <- aggregate(list(abund=spec.dat$GenusSpeciesSex),
+                        list(GenusSpeciesSex=spec.dat$GenusSpeciesSex,
+                             Site=spec.dat[,site],
+                             Year=spec.dat[,year],
+                             PlantGenusSpecies=
+                               spec.dat$PlantGenusSpecies),
+                        length)
+  sites <- split(agg.spec, agg.spec[,site])
+  networks <- lapply(sites, function(x){
+    split(x, f=x[,"Year"])
+  })
+  ## formats data matrices appropriate for network analysis
+  comms <- lapply(unlist(networks, recursive=FALSE), function(y){
+    samp2site.spp(site=y[,"PlantGenusSpecies"],
+                  spp=y[,"GenusSpeciesSex"],
+                  abund=y[,"abund"])
+  })
+  return(comms)
+}
+
 
 getSpecies <- function(networks, FUN){
   species.site <- lapply(networks, FUN)

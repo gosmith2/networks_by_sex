@@ -36,6 +36,44 @@ fix.white.space <- function(d) {
   d
 }
 
+dat.clean <- function(spec.dat) {
+  spec.dat$GenusSpecies <- fix.white.space(paste(spec.dat$Genus,
+                                             spec.dat$Species,
+                                             spec.dat$SubSpecies))
+  
+  spec.dat$PlantGenusSpecies <-  fix.white.space(paste(spec.dat$PlantGenus,
+                                                   spec.dat$PlantSpecies,
+                                                   spec.dat$PlantVar,
+                                                   spec.dat$PlantSubSpecies))
+  
+  spec.dat$Int <-  fix.white.space(paste(spec.dat$GenusSpecies,
+                                     spec.dat$PlantGenusSpecies))
+  spec.dat$IntGen <-  fix.white.space(paste(spec.dat$Genus,
+                                        spec.dat$PlantGenus))
+}
+
+dat.dates <- function(spec.dat) {
+  spec.dat$Date <- as.Date(spec.dat$Date, format='%m/%d/%y')
+  spec.dat$Doy <- as.numeric(strftime(spec.dat$Date, format='%j'))
+  spec.dat$Year <- as.numeric(format(spec.dat$Date,'%Y'))
+}
+
+dat.rm.blanks <- function(spec.dat) {
+  spec.dat <- spec[spec$PlantGenusSpecies != "",]
+  spec.dat <- spec[spec$GenusSpecies != "",]
+}
+
+build.nets <- function(spec.dat,title) {
+  SY <- breakNet(spec.dat, 'Site', 'Year')
+  SSY <- breakNetSex(spec.dat,'Site','Year')
+  GSY <- lapply(SY, graph.incidence, weighted=TRUE)
+  GSSY <- lapply(SSY, graph.incidence, weighted=TRUE) 
+  assign(paste(title,"SY",sep="_"), SY, envir = globalenv())
+  assign(paste(title,"SSY",sep="_"), SSY, envir = globalenv())
+  assign(paste(title,"GSY",sep="_"), GSY, envir = globalenv())
+  assign(paste(title,"GSSY",sep="_"), GSSY, envir = globalenv())
+  }
+
 
 ## return sorted unique values
 id <- function(x) unique(sort(x))

@@ -10,86 +10,102 @@ library(fossil)
 library(bipartite)
 source('misc.R')
 source('prepNets.R')
-#setwd("~/Dropbox/skyIslands/dataPrep")
-source('relational/relational_prep.R')
-#setwd("~/Dropbox/skyIslands/dataPrep")
-source('relational/relational_make.R')
-#setwd("~/Dropbox/skyIslands/dataPrep")
-source('relational/make_traditional.R')
 
-#setwd("~/Dropbox/skyIslands/dataPrep")
-#src.dir <- '../../skyIslands_saved/data/relational/relational/traditional/'
-spec <-read.csv("specimens-yos.csv")
 
-#source("src/misc.R")
-#source("src/prepNets.R")
-#source("src/specialization.R")
 
-## did not complete full sampling rounds in any of these sites. Was
-## just scouting.
-## can keep UK and SS when more species are IDed
-## site.2.drop <- c("JM", "CC", "UK", "SS")
-#site.2.drop <- c("JM", "CC", "SS")
-#spec <- spec[!spec$Site %in% site.2.drop,]
-#spec <- droplevels(spec)
+####--------------------------####
+#### YOSEMITE
+####--------------------------####
+
+#Sys.getenv("GITHUB_PAT")
+#pb_download("specimens-yos.csv",
+#            dest="data/specimens-yos.csv",
+#            tag="data.v.1")
+spec.y <-read.csv("data/specimens-yos.csv")
+
+## drop pan data
+spec.y <- spec.y[spec.y$NetPan == "net",]
+
+## drop extra round at L21 when field crew did not sample correctly
+# from specimens
+extra.round <- spec.y$Site == 'L21' & spec.y$Date == '2014-07-01'
+spec.y <- spec.y[!extra.round,]
+
+
 
 ## get specimen data ready. ##intuitive
-spec$GenusSpecies <- fix.white.space(paste(spec$Genus,
-                                           spec$Species,
-                                           spec$SubSpecies))
+dat.clean(spec.y)
+dat.dates(spec.y)
 
-spec$PlantGenusSpecies <-  fix.white.space(paste(spec$PlantGenus,
-                                                 spec$PlantSpecies,
-                                                 spec$PlantVar,
-                                                 spec$PlantSubSpecies))
-
-spec$Int <-  fix.white.space(paste(spec$GenusSpecies,
-                                   spec$PlantGenusSpecies))
-spec$IntGen <-  fix.white.space(paste(spec$Genus,
-                                      spec$PlantGenus))
-
-#set up dates. Intuitive
-spec$Date <- as.Date(spec$Date, format='%m/%d/%y')
-spec$Doy <- as.numeric(strftime(spec$Date, format='%j'))
-spec$Year <- as.numeric(format(spec$Date,'%Y'))
 
 ## drop non-bee, non-Syrphids
-spec <- spec[spec$Family %in% c("Andrenidae", "Apidae",
+spec.y <- spec.y[spec.y$Family %in% c("Andrenidae", "Apidae",
                                  "Colletidae", "Halictidae",
                                  "Megachilidae", "Syrphidae"),]
 
-##spec <- spec[spec$Family %in% c("Andrenidae", "Apidae",
-##                                "Colletidae", "Halictidae",
-##                                "Megachilidae"),]
-
-
-## drop lasioglossum until we get 2017, 2018 IDs back from Joel
-## spec <- spec[spec$Genus != "Lasioglossum",]
-
-
 ## for networks, drop specimens without plant IDs (or bee IDs)
-spec <- spec[spec$PlantGenusSpecies != "",]
-spec <- spec[spec$GenusSpecies != "",]
+dat.rm.blanks(spec.y)
+spec.y$GenusSpeciesSex<-paste(spec.y$GenusSpecies,spec.y$Sex)
+spec$YearSR <- paste(spec$Year, spec$SampleRound, sep=".")
 
-## drop the the 2017 sample of PL because it was on fire for other
-## sampling rounds and there was basically nothing blooming the first
-## round
-#spec <- spec[!(spec$Site == "PL" & spec$Year == "2017"),]
+### site-level networks
+build.nets(spec.y,"yos")
+ 
+save(yos_GSSY,yos_GSY,yos_SSY,yos_SY, file="data/nets.Rdata")
+#ah. saves the built networks elsewhere for analysis, which 
+#will be similar to the analysis above
 
-## calculate orthoganol polynomials for doy. #??
-spec$DoyPoly <- poly(spec$Doy, degree=2)
-spec$DoyPoly1 <- spec$DoyPoly[,'1']
-spec$DoyPoly2 <- spec$DoyPoly[,'2']
-spec$DoyPoly <- NULL
 
-## also for Latitude
-spec$LatPoly <- poly(spec$Lat, degree=2)
-spec$LatPoly1 <- spec$LatPoly[,'1']
-spec$LatPoly2 <- spec$LatPoly[,'2']
-spec$LatPoly <- NULL
+
+sp.lev <- calcSpec(nets, spec)
 
 save(spec, file="../data/spec.Rdata")
 write.csv(spec, file="../data/spec.csv", row.names=FALSE)
+
+
+####--------------------------####
+#### Hedgerow
+####--------------------------####
+
+#Sys.getenv("GITHUB_PAT")
+#pb_download("specimens-yos.csv",
+#            dest="data/specimens-yos.csv",
+#            tag="data.v.1")
+load("data/specimens_hr.RData",verbose=TRUE) 
+  #For whatever reason, resulting df is called "dd"
+spec.h<-dd
+
+
+## get specimen data ready. ##intuitive
+dat.clean(spec.h)
+dat.dates(spec.h)
+
+spec.h$PlantGenusSpecies <-  fix.white.space(paste(spec.h$PlantGenus,
+                                                     spec.h$PlantSpecies,
+                                                     spec.h$PlantVar,
+                                                     spec.h$PlantSubSpecies))
+spec.h$Int <-  fix.white.space(paste(spec.h$GenusSpecies,
+                                       spec.h$PlantGenusSpecies))
+spec.h$IntGen <-  fix.white.space(paste(spec.h$Genus,
+                                          spec.h$PlantGenus))
+
+
+## drop non-bee, non-Syrphids
+spec.h <- spec.h[spec.h$Family %in% c("Andrenidae", "Apidae",
+                                      "Colletidae", "Halictidae",
+                                      "Megachilidae", "Syrphidae"),]
+
+## for networks, drop specimens without plant IDs (or bee IDs)
+dat.rm.blanks(spec.h)
+spec.h$GenusSpeciesSex<-paste(spec.h$GenusSpecies,spec.h$Sex)
+spec.h$YearSR <- paste(spec.h$Year, spec.h$SampleRound, sep=".")
+
+### site-level networks
+build.nets(spec.h,"hr")
+
+save(hr_GSSY,hr_GSY,hr_SSY,hr_SY, file="data/nets.Rdata")
+
+
 
 ## *******************************************************************
 ## create a giant network to calculate specialization etc. acorss all
@@ -123,18 +139,7 @@ rownames(traits) <- NULL
 
 write.csv(traits, file='../data/traits.csv')
 
-### site-level networks
-spec$YearSR <- paste(spec$Year, spec$SampleRound, sep=".")
 
-nets <- breakNet(spec, 'Site', 'YearSR') #all of the networks, split by $ somehow. does all the aggregating etc
-graphs <- lapply(nets, graph.incidence, weighted=TRUE) #makes a graph for each?
-save(graphs, nets, file="../data/nets.Rdata")
-  #ah. saves the built networks elsewhere for analysis, which 
-  #will be similar to the analysis above
- 
-
-
-sp.lev <- calcSpec(nets, spec)
 save(sp.lev, file='../data/splev.Rdata')
 
 
