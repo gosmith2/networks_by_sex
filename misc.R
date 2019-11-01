@@ -50,17 +50,20 @@ dat.clean <- function(spec.dat) {
                                      spec.dat$PlantGenusSpecies))
   spec.dat$IntGen <-  fix.white.space(paste(spec.dat$Genus,
                                         spec.dat$PlantGenus))
+  return(spec.dat)
 }
 
 dat.dates <- function(spec.dat) {
   spec.dat$Date <- as.Date(spec.dat$Date, format='%m/%d/%y')
   spec.dat$Doy <- as.numeric(strftime(spec.dat$Date, format='%j'))
   spec.dat$Year <- as.numeric(format(spec.dat$Date,'%Y'))
+  return(spec.dat)
 }
 
 dat.rm.blanks <- function(spec.dat) {
-  spec.dat <- spec[spec$PlantGenusSpecies != "",]
-  spec.dat <- spec[spec$GenusSpecies != "",]
+  spec.dat <- spec.dat[spec.dat$PlantGenusSpecies != "",]
+  spec.dat <- spec.dat[spec.dat$GenusSpecies != "",]
+  return(spec.dat)
 }
 
 build.nets <- function(spec.dat,title) {
