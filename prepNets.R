@@ -96,6 +96,37 @@ getCon <- function(x, INDEX){
   apply(x, INDEX, function(y) sum(y > 0))
 }
 
+## calculates the species roles from a network and returns a dataframe
+## with site status and ypr
+## takes networks and specimen data
+
+calcSpec <- function(nets, spec){
+  ## applies specieslevel from bipartite to networks
+  species.lev <- lapply(nets, function(x){
+    sl <- specieslevel(x)
+    return(sl)
+  })
+  
+  ## extract the values and make a dataframe
+  specs  <-  mapply(function(a, b)
+    getSpec(species.lev = a,
+            names.net = b,
+            seps="[.]"),
+    a = species.lev,
+    b = names(nets),
+    SIMPLIFY = FALSE)
+  
+  specs <- do.call(rbind, specs)
+  specs$sex <- substr(specs$GenusSpecies,
+                      nchar(specs$GenusSpecies),
+                      nchar(specs$GenusSpecies)
+                      )
+  specs$sex <- ifelse(specs$speciesType=="plant"|specs$sex=="e",NA,specs$sex)
+  specs$sex <- as.factor(specs$sex)
+  rownames(specs) <- NULL
+  return(specs)
+}
+
 
 ## extreact specialization scores from specieslevel function and
 ## return data frame
@@ -109,6 +140,7 @@ getSpec <- function(species.lev, names.net, seps="_"){
   all.pp$speciesType <- c(rep("pollinator", n.pp[1]),
                           rep("plant", n.pp[2]))
   all.pp$Site <- strsplit(names.net, seps)[[1]][1]
-  all.pp$assem <- strsplit(names.net, seps)[[1]][2]
+  all.pp$Year <- strsplit(names.net, seps)[[1]][2]
   return(all.pp)
 }
+

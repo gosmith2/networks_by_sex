@@ -9,6 +9,9 @@ library(fields)
 library(fossil)
 library(bipartite)
 library(tidyverse)
+library(stringr)
+library(nlme)
+library(sciplot)
 source('misc.R')
 source('prepNets.R')
 
@@ -46,9 +49,12 @@ spec.y <- spec.y[spec.y$Family %in% c("Andrenidae", "Apidae",
 
 ## for networks, drop specimens without plant IDs (or bee IDs)
 spec.y<-dat.rm.blanks(spec.y)
-spec.y$GenusSpeciesSex<-paste(spec.y$GenusSpecies,
-                              spec.y$Sex,
-                              sep="_")
+spec.y$GenusSpeciesSex<-ifelse(spec.y$Sex %in% c("m","f"),
+                               paste(spec.y$GenusSpecies,
+                                     spec.y$Sex,sep="_"),
+                               paste(spec.y$GenusSpecies,
+                                     "e",sep="_")
+)
 spec.y$YearSR <- paste(spec.y$Year, 
                        spec.y$SampleRound, 
                        sep=".")
@@ -93,21 +99,24 @@ spec.h <- spec.h[spec.h$Family %in% c("Andrenidae", "Apidae",
 ## for networks, drop specimens without plant IDs (or bee IDs)
 spec.h<-dat.rm.blanks(spec.h)
 
-spec.h$GenusSpeciesSex<-paste(spec.h$GenusSpecies, 
-                              spec.h$Sex,
-                              sep="_")
+spec.h$GenusSpeciesSex<-ifelse(spec.h$Sex %in% c("m","f"),
+                               paste(spec.h$GenusSpecies,
+                                     spec.h$Sex,sep="_"),
+                               paste(spec.h$GenusSpecies,
+                                     "e",sep="_")
+)
 
 spec.h$YearSR <- paste(spec.h$Year,
                        spec.h$SampleRound, 
                        sep=".")
 
 #Drop Mariani 2012, MC1.2014, and H16.2012: too few interactions to calculate network parameters 
-m12<- spec.h$Site == "Mariani" & spec.h$Year == "2012"
-mc14<- spec.h$Site == "MC1" & spec.h$Year == '2014'
-h12<- spec.h$Site == "H16" & spec.h$Year == '2012'
-spec.h<-spec.h[!m12,]
-spec.h<-spec.h[!mc14,]
-spec.h<-spec.h[!h12,]
+#m12<- spec.h$Site == "Mariani" & spec.h$Year == "2012"
+#mc14<- spec.h$Site == "MC1" & spec.h$Year == '2014'
+#h12<- spec.h$Site == "H16" & spec.h$Year == '2012'
+#spec.h<-spec.h[!m12,]
+#spec.h<-spec.h[!mc14,]
+#spec.h<-spec.h[!h12,]
 
 
 ### site-level networks
@@ -122,30 +131,102 @@ build.nets(spec.h,"hr")
 ####--------------------------####
 
 ssy.ls <- c(yos_SSY,hr_SSY)
-sex_traits <- sapply(ssy.ls,function(x){
+
+#remove all networks with too few interactions to calculate metrics
+ssy.ls <- ssy.ls[sapply(ssy.ls, function(x) all(dim(x) > 1))]
+
+#calculate networks, output into usable data frame
+sex_trts.df<-calcSpec(ssy.ls)
+
+
+bargraph.CI(response=sex_trts.df$species.specificity.index,x.factor=sex_trts.df$sex)
+
+nlme
+
+sex_trts.df %>%
+  filter(sex=="_") %>%
+  select(GenusSpecies,Site)
+
+spec.h %>%
+  filter(Sex!="f",Sex!="m") %>%
+  select(Sex,GenusSpecies)
+
+spec.y %>%
+  filter(Genus=="Triepeolus") %>%
+  select(Sex,GenusSpecies,GenusSpeciesSex)
+
+
+
+
+###############################################
+
+
+
+##############################################
+
+
+###############################################
+sex_trts.df %>%
+  filter(sex=="_") %>%
+  select(GenusSpecies,Site)
+
+#calculating network traits for males and females
+sex_traits <- lapply(ssy.ls,function(x){
   y<-try(specieslevel(x))
   if(inherits(y, "try-error")) browser()
   return(y)
 }
 )
 
-all(sapply(ssy.ls,dim)>1) #all dimensions greater than 1, but still getting
-#networks too small error
 
-#names(ssy.ls)
+sex_trts.df
+sex_trts.df$degree
+all(sapply(ssy.ls,dim)>1) 
+
+
+#remove the lower level (plants) to simplify indexing
+pol_traits <- lapply(sex_traits,function(x){
+  x[1]
+    }
+    )
 
 poll_nodeSpecF <- lapply(sex_traits,function(x){
   lapply(x$'higher level',function(y){
-    sapply(strsplit(rownames(y), split="_"), function(z) z[2])
-    })
-  })
+    lapply(rownames(y),function(z){
+      str_extract(z,"_.")
+    }
+    )
+  }
+  )
+}
+)
+poll_nodeSpecF
     
+poll_f <- ifelse(
+  lapply(sex_traits,function(x){
+    lapply(x$'higher level',function(y){
+      lapply(rownames(y),function(z){
+        str_extract(z,"_.")
+    })})})=="_f",
+  
+    )
+  }
+  )
+}
+)
+
   x$'higher level'$'node.specialisation.index.NSI'
 })
 
-mean(poll_nodeSpec[,substr(nam))
 
-strsplit(rownames(sex_traits$Zamora2014$'higher level'), split="_")
+tst<-sapply(rownames(sex_traits$Zamora.2014$'higher level'),function(x){
+  strsplit(x, split="_")
+})
+
+tst3<-sapply(rownames(sex_traits$Zamora.2014$'higher level'),function(x){
+  str_extract(x,"_.")
+})
+tst3
 
 
 #traceback. 
