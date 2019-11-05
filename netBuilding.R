@@ -110,14 +110,6 @@ spec.h$YearSR <- paste(spec.h$Year,
                        spec.h$SampleRound, 
                        sep=".")
 
-#Drop Mariani 2012, MC1.2014, and H16.2012: too few interactions to calculate network parameters 
-#m12<- spec.h$Site == "Mariani" & spec.h$Year == "2012"
-#mc14<- spec.h$Site == "MC1" & spec.h$Year == '2014'
-#h12<- spec.h$Site == "H16" & spec.h$Year == '2012'
-#spec.h<-spec.h[!m12,]
-#spec.h<-spec.h[!mc14,]
-#spec.h<-spec.h[!h12,]
-
 
 ### site-level networks
 build.nets(spec.h,"hr")
@@ -130,22 +122,84 @@ build.nets(spec.h,"hr")
 #### Combining network lists
 ####--------------------------####
 
+#observed networks
 ssy.ls <- c(yos_SSY,hr_SSY)
+
+##randomizing males and females for nulls
+keeps<-c("UniqueID",
+          "GenusSpecies",
+          "Site",
+          "Year",
+          "PlantGenusSpecies",
+          "GenusSpeciesSex",
+          "Sex")
+
+bind_rows(select(spec.y,keeps),
+          select(spec.h,keeps))->
+  spec.all
+
+spec.all$SiteYr<-paste(spec.all$Site,spec.all$Year)
+
+spec.all %>%
+  filter(SiteYr=="Zamora 2014")->
+  zam14.all
+
+ran.zam<-ran.sex(zam14.all)
+
+rand.sexes.ls<-ran.gen(spec.all,3)
+
+rand.sexes.ls[[3]] %>%
+  filter(SiteYr=='Zamora 2014') %>%
+  select(GenusSpeciesSex,GenusSpeciesMix)
+  
+
+
+
+
+
+tst<-data.frame(SiteYr=c("a","a","a","b","b","c","c","c"),
+                ID=c(1:8),
+                GenusSpecies=c(1,1,2,1,1,3,3,3),
+                Sex=c("f","m","f","m","m","f","m","f"))
+
+
+
+
+tst$mix<-unlist(ran.sex(tst))
+
+tst.ls<-numeric()
+tst.ls[1]<-tst
+
+
+tst.ls<-ran.gen(tst,3)
+
+
+ran.ls %>%
+  select(GenusSpeciesSex,Sex) %>%
+  head()
+  
+spec.all %>%
+  sel
+  
+  sample(z)
+}
+)
+
+sample
+
+SSY <- breakNetSex(spec.dat,'Site','Year')
+
+
 
 #remove all networks with too few interactions to calculate metrics
 ssy.ls <- ssy.ls[sapply(ssy.ls, function(x) all(dim(x) > 1))]
 
-#calculate networks, output into usable data frame
+#calculate network stats at the individual level, output into usable data frame
 sex_trts.df<-calcSpec(ssy.ls)
 
+write.csv(sex_trts.df, file='data/sex_traits.csv')
 
-bargraph.CI(response=sex_trts.df$species.specificity.index,x.factor=sex_trts.df$sex)
 
-nlme
-
-sex_trts.df %>%
-  filter(sex=="_") %>%
-  select(GenusSpecies,Site)
 
 spec.h %>%
   filter(Sex!="f",Sex!="m") %>%
@@ -160,6 +214,7 @@ spec.y %>%
 
 ###############################################
 
+#below here is misc code that I don't run
 
 
 ##############################################
@@ -270,6 +325,16 @@ write.csv(traits, file='../data/traits.csv')
 
 
 save(sp.lev, file='../data/splev.Rdata')
+
+#Drop Mariani 2012, MC1.2014, and H16.2012: too few interactions to calculate network parameters 
+#m12<- spec.h$Site == "Mariani" & spec.h$Year == "2012"
+#mc14<- spec.h$Site == "MC1" & spec.h$Year == '2014'
+#h12<- spec.h$Site == "H16" & spec.h$Year == '2012'
+#spec.h<-spec.h[!m12,]
+#spec.h<-spec.h[!mc14,]
+#spec.h<-spec.h[!h12,]
+
+
 
 
 ## checks
