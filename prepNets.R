@@ -33,8 +33,9 @@ breakNet <- function(spec.dat, site, year){
 
 breakNetSex <- function(spec.dat, site, year, mix){
   ## puts data together in a list and removes empty matrices
-  agg.spec <- aggregate(list(abund=spec.dat$'mix'),
-                        list(GenusSpeciesSex=spec.dat$'mix',
+  #browser()
+  agg.spec <- aggregate(list(abund=spec.dat[,mix]),
+                        list(GenusSpeciesMix=spec.dat[,mix],
                              Site=spec.dat[,site],
                              Year=spec.dat[,year],
                              PlantGenusSpecies=
@@ -47,7 +48,7 @@ breakNetSex <- function(spec.dat, site, year, mix){
   ## formats data matrices appropriate for network analysis
   comms <- lapply(unlist(networks, recursive=FALSE), function(y){
     samp2site.spp(site=y[,"PlantGenusSpecies"],
-                  spp=y[,"GenusSpeciesSex"],
+                  spp=y[,"GenusSpeciesMix"],
                   abund=y[,"abund"])
   })
   return(comms)
@@ -172,33 +173,42 @@ getSpec <- function(species.lev, names.net, seps="_"){
 #build a large heirarcical list of networks where sex is randomized
 
 ran.sex<-function(spec.data){
-  lapply(unique(spec.data$SiteYr),function(x){
+  col.ls<-lapply(unique(spec.data$SiteYr),function(x){
     net<-filter(spec.data,SiteYr==x)
-    c<-lapply(unique(net$GenusSpecies), function(y){
+    sp.mix.col <-lapply(unique(net$GenusSpecies), function(y){
+   #   browser()
       sp<-filter(net,net$GenusSpecies==y)
-      mix<-sample(sp$Sex,replace=FALSE)
-      unlist(mix)
+      if(length(unique(sp$Sex)) != 1){
+      sp$MixSex<-sample(sp$Sex,replace=FALSE)
+      }else{
+        sp$MixSex <- sp$Sex
+      }
+      return(sp)
     })
-    unlist(c)
   })
+  return(do.call(rbind, unlist(col.ls, recursive=FALSE)))
 }
 
+#mclapply in the parallel package
+
 ran.gen<-function(spec.data,iterations){
-  #setup: add column to actual observation df, initiate list
-  spec.data$mix<-spec.data$Sex
+  #setup: add column to actual observation df and initiate list
+  spec.data$MixSex<-spec.data$Sex
   spec.data$GenusSpeciesMix<-paste(spec.data$GenusSpecies,
-                                   spec.data$mix,
+                                   spec.data$MixSex,
                                    sep="_")
   destList<-list() 
   destList[[1]]<-spec.data
   
   #scramble sex column for within each species within each site
-  for(i in c(1:(iterations))){
-    spec.data$mix<-unlist(ran.sex(spec.data))
+  it.vec<-1:iterations
+  randoms<-mclapply(it.vec,function(z){
+    spec.data<-ran.sex(spec.data)
     spec.data$GenusSpeciesMix<-paste(spec.data$GenusSpecies,
-                                     spec.data$mix,
+                                     spec.data$MixSex,
                                      sep="_")
-    destList[[i+1]]<-spec.data
-  }
+    return(spec.data)
+  },mc.core=6)
+  destList<-c(destList,randoms)
   return(destList)
 }

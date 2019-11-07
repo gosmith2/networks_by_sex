@@ -2,7 +2,15 @@
 ## Modified (very slightly) from Ponisio sky islands data prep.
 
 
+##this should be run on lauren's computer via terminal (git bash): 
+ssh gsmith@osmia.dyn.ucr.edu 
+#ip is: 138.23.14.130
+cd Documents
+#git clone https://github.com/gosmith2/networks_by_sex.git
+cd Documents/networks_by_sex
+
 rm(list=ls())
+library(piggyback)
 library(igraph)
 library(vegan)
 library(fields)
@@ -12,20 +20,25 @@ library(tidyverse)
 library(stringr)
 library(nlme)
 library(sciplot)
+library(parallel)
+
 source('misc.R')
 source('prepNets.R')
 
+Sys.getenv("GITHUB_PAT")
+pb_download("specimens-yos.csv",
+            dest="specimens-yos.csv",
+            tag="data.v.1")
+pb_download("specimens-hr.RData",
+            dest="specimens-hr.RData",
+            tag="data.v.1")
 
 
 ####--------------------------####
 #### YOSEMITE
 ####--------------------------####
 
-#Sys.getenv("GITHUB_PAT")
-#pb_download("specimens-yos.csv",
-#            dest="data/specimens-yos.csv",
-#            tag="data.v.1")
-spec.y <-read.csv("data/specimens-yos.csv")
+spec.y <-read.csv("/Documents/UCR_postdoc/networks_by_sex/data/specimens-yos.csv")
 
 ## drop pan data
 spec.y <- spec.y[spec.y$NetPan == "net",]
@@ -79,7 +92,7 @@ build.nets(spec.y,"yos") #uses the breakNets and breakNetsSex fxns to
 #pb_download("specimens-hr.RData",
 #            dest="data/specimens-hr.RData",
 #            tag="data.v.1")
-load("data/specimens_hr.RData",verbose=TRUE) 
+load("/Documents/UCR_postdoc/networks_by_sex/data/specimens_hr.RData",verbose=TRUE) 
   #For whatever reason, resulting df is called "dd"
 spec.h<-dd
 
@@ -140,74 +153,33 @@ bind_rows(select(spec.y,keeps),
 
 spec.all$SiteYr<-paste(spec.all$Site,spec.all$Year)
 
-spec.all %>%
-  filter(SiteYr=="Zamora 2014")->
-  zam14.all
-
-ran.zam<-ran.sex(zam14.all)
-
 rand.sexes.ls<-ran.gen(spec.all,3)
 
-rand.sexes.ls[[3]] %>%
-  filter(SiteYr=='Zamora 2014') %>%
-  select(GenusSpeciesSex,GenusSpeciesMix)
-  
 
-
-
-
-
-tst<-data.frame(SiteYr=c("a","a","a","b","b","c","c","c"),
-                ID=c(1:8),
-                GenusSpecies=c(1,1,2,1,1,3,3,3),
-                Sex=c("f","m","f","m","m","f","m","f"))
-
-
-
-
-tst$mix<-unlist(ran.sex(tst))
-
-tst.ls<-numeric()
-tst.ls[1]<-tst
-
-
-tst.ls<-ran.gen(tst,3)
-
-
-ran.ls %>%
-  select(GenusSpeciesSex,Sex) %>%
-  head()
-  
-spec.all %>%
-  sel
-  
-  sample(z)
+#make mclapply
+nets.mix<-mclapply(rand.sexes.ls,function(y){
+  breakNetSex(y,'Site','Year','GenusSpeciesMix')
 }
-)
+mc.cores=6)
 
-sample
-
-SSY <- breakNetSex(spec.dat,'Site','Year')
-
-
+#real.mx<-rand.sexes.ls[[1]]
+#net.mx<-breakNetSex(real.mx,'Site','Year','GenusSpeciesMix')
 
 #remove all networks with too few interactions to calculate metrics
-ssy.ls <- ssy.ls[sapply(ssy.ls, function(x) all(dim(x) > 1))]
+nets.mix.clean<-mclapply(nets.mix, function(x){
+  x[sapply(x,function(y) all(dim(y)>1))]
+}, mc.cores=6)
+
+#save the networks themselves
+write.csv(nets.mix.clean, file='data/mix_nets_test.csv')
 
 #calculate network stats at the individual level, output into usable data frame
-sex_trts.df<-calcSpec(ssy.ls)
+sex.trts.mix<-lapply(nets.mix.clean,function(x) calcSpec(x))
 
-write.csv(sex_trts.df, file='data/sex_traits.csv')
+write.csv(sex.trts.mix, file='data/sex_mix_test.csv')
 
 
 
-spec.h %>%
-  filter(Sex!="f",Sex!="m") %>%
-  select(Sex,GenusSpecies)
-
-spec.y %>%
-  filter(Genus=="Triepeolus") %>%
-  select(Sex,GenusSpecies,GenusSpeciesSex)
 
 
 
@@ -221,6 +193,21 @@ spec.y %>%
 
 
 ###############################################
+
+#spec.all %>%
+#  filter(SiteYr=="Zamora 2014")->
+#  zam14.all
+
+#ran.zam<-ran.sex(zam14.all)
+
+#ram.zam <- do.call(rbind, unlist(ran.zam, recursive=FALSE))
+
+#ram.zam %>%
+#  filter(SiteYr=="Zamora 2014") %>%
+#  (length(unique(sp$Sex)) != 1)
+#  head()
+
+
 sex_trts.df %>%
   filter(sex=="_") %>%
   select(GenusSpecies,Site)
@@ -270,18 +257,15 @@ poll_f <- ifelse(
 }
 )
 
-  x$'higher level'$'node.specialisation.index.NSI'
-})
+spec.h %>%
+  filter(Sex!="f",Sex!="m") %>%
+  select(Sex,GenusSpecies)
+
+spec.y %>%
+  filter(Genus=="Triepeolus") %>%
+  select(Sex,GenusSpecies,GenusSpeciesSex)
 
 
-tst<-sapply(rownames(sex_traits$Zamora.2014$'higher level'),function(x){
-  strsplit(x, split="_")
-})
-
-tst3<-sapply(rownames(sex_traits$Zamora.2014$'higher level'),function(x){
-  str_extract(x,"_.")
-})
-tst3
 
 
 #traceback. 
@@ -295,6 +279,38 @@ tst3
 ## create a giant network to calculate specialization etc. acorss all
 ## SI
 ## *******************************************************************
+
+
+#tst<-data.frame(SiteYr=c("a","a","a","b","b","c","c","c"),
+#                ID=c(1:8),
+#                GenusSpecies=c(1,1,2,1,1,3,3,3),
+#                Sex=c("f","m","f","m","m","f","m","f"))
+
+
+
+
+#tst$mix<-unlist(ran.sex(tst))
+
+#tst.ls<-numeric()
+#tst.ls[1]<-tst
+
+
+#tst.ls<-ran.gen(tst,3)
+
+
+#x$'higher level'$'node.specialisation.index.NSI'
+#})
+
+
+#tst<-sapply(rownames(sex_traits$Zamora.2014$'higher level'),function(x){
+#  strsplit(x, split="_")
+#})
+
+#tst3<-sapply(rownames(sex_traits$Zamora.2014$'higher level'),function(x){
+#  str_extract(x,"_.")
+#})
+#tst3
+
 agg.spec <- aggregate(list(abund=spec$GenusSpecies),
                       list(GenusSpecies=spec$GenusSpecies,
                            PlantGenusSpecies=spec$PlantGenusSpecies),
