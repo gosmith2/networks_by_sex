@@ -31,7 +31,7 @@ breakNet <- function(spec.dat, site, year){
   return(comms)
 }
 
-breakNetSex <- function(spec.dat, site, year, mix){
+breakNetMix <- function(spec.dat, site, year, mix){
   ## puts data together in a list and removes empty matrices
   #browser()
   agg.spec <- aggregate(list(abund=spec.dat[,mix]),
@@ -55,27 +55,27 @@ breakNetSex <- function(spec.dat, site, year, mix){
 }
 
 #below is duplicate!!!!!!!!!!!!!
-breakNetSex <- function(spec.dat, site, year, mix){
+#breakNetSex <- function(spec.dat, site, year, mix){
   ## puts data together in a list and removes empty matrices
-  agg.spec <- aggregate(list(abund=spec.dat$GenusSpeciesSex),
-                        list(GenusSpeciesSex=spec.dat$GenusSpeciesSex,
-                             Site=spec.dat[,site],
-                             Year=spec.dat[,year],
-                             PlantGenusSpecies=
-                               spec.dat$PlantGenusSpecies),
-                        length)
-  sites <- split(agg.spec, agg.spec[,site])
-  networks <- lapply(sites, function(x){
-    split(x, f=x[,"Year"])
-  })
+#  agg.spec <- aggregate(list(abund=spec.dat$GenusSpeciesSex),
+#                        list(GenusSpeciesSex=spec.dat$GenusSpeciesSex,
+#                             Site=spec.dat[,site],
+#                             Year=spec.dat[,year],
+#                             PlantGenusSpecies=
+#                               spec.dat$PlantGenusSpecies),
+#                        length)
+#  sites <- split(agg.spec, agg.spec[,site])
+#  networks <- lapply(sites, function(x){
+#    split(x, f=x[,"Year"])
+#  })
   ## formats data matrices appropriate for network analysis
-  comms <- lapply(unlist(networks, recursive=FALSE), function(y){
-    samp2site.spp(site=y[,"PlantGenusSpecies"],
-                  spp=y[,"GenusSpeciesSex"],
-                  abund=y[,"abund"])
-  })
-  return(comms)
-}
+#  comms <- lapply(unlist(networks, recursive=FALSE), function(y){
+#    samp2site.spp(site=y[,"PlantGenusSpecies"],
+#                  spp=y[,"GenusSpeciesSex"],
+#                  abund=y[,"abund"])
+#  })
+#  return(comms)
+#}
 #above is duplicate
 
 
@@ -191,7 +191,7 @@ ran.sex<-function(spec.data){
 
 #mclapply in the parallel package
 
-ran.gen<-function(spec.data,iterations){
+ran.gen<-function(spec.data,iterations,cores){
   #setup: add column to actual observation df and initiate list
   spec.data$MixSex<-spec.data$Sex
   spec.data$GenusSpeciesMix<-paste(spec.data$GenusSpecies,
@@ -202,13 +202,13 @@ ran.gen<-function(spec.data,iterations){
   
   #scramble sex column for within each species within each site
   it.vec<-1:iterations
-  randoms<-mclapply(it.vec,function(z){
+  randoms<-mclapply(it.vec, function(z){
     spec.data<-ran.sex(spec.data)
     spec.data$GenusSpeciesMix<-paste(spec.data$GenusSpecies,
                                      spec.data$MixSex,
                                      sep="_")
     return(spec.data)
-  },mc.core=6)
+  }, mc.cores = cores)
   destList<-c(destList,randoms)
   return(destList)
 }

@@ -38,7 +38,7 @@ pb_download("specimens-hr.RData",
 #### YOSEMITE
 ####--------------------------####
 
-spec.y <-read.csv("/Documents/UCR_postdoc/networks_by_sex/data/specimens-yos.csv")
+spec.y <-read.csv("data/specimens-yos.csv")
 
 ## drop pan data
 spec.y <- spec.y[spec.y$NetPan == "net",]
@@ -92,7 +92,7 @@ build.nets(spec.y,"yos") #uses the breakNets and breakNetsSex fxns to
 #pb_download("specimens-hr.RData",
 #            dest="data/specimens-hr.RData",
 #            tag="data.v.1")
-load("/Documents/UCR_postdoc/networks_by_sex/data/specimens_hr.RData",verbose=TRUE) 
+load("data/specimens-hr.RData",verbose=TRUE) 
   #For whatever reason, resulting df is called "dd"
 spec.h<-dd
 
@@ -153,31 +153,52 @@ bind_rows(select(spec.y,keeps),
 
 spec.all$SiteYr<-paste(spec.all$Site,spec.all$Year)
 
-rand.sexes.ls<-ran.gen(spec.all,3)
+cores <- 3
 
+#randomize the sexes w/in species w/in sites
+rand.sexes.ls<-ran.gen(spec.all,999,cores)
 
-#make mclapply
+## checking that they mixed
+#rand.sexes.ls[[1]] %>%
+#	filter(SiteYr=='Zamora 2014') %>%
+#	select(GenusSpeciesMix,UniqueID)
+
+#build the networks at the sex level using the mixed sexes
 nets.mix<-mclapply(rand.sexes.ls,function(y){
-  breakNetSex(y,'Site','Year','GenusSpeciesMix')
-}
-mc.cores=6)
+  breakNetMix(y,'Site','Year','GenusSpeciesMix')
+}, mc.cores = cores)
 
-#real.mx<-rand.sexes.ls[[1]]
-#net.mx<-breakNetSex(real.mx,'Site','Year','GenusSpeciesMix')
+## confirm that the networks are actually different
+#nets.mix[[1]]$Zamora.2014
+#nets.mix[[2]]$Zamora.2014
 
 #remove all networks with too few interactions to calculate metrics
 nets.mix.clean<-mclapply(nets.mix, function(x){
   x[sapply(x,function(y) all(dim(y)>1))]
-}, mc.cores=6)
+}, mc.cores=cores)
 
 #save the networks themselves
-write.csv(nets.mix.clean, file='data/mix_nets_test.csv')
+save(nets.mix.clean, file = 'data/mix_nets.RData')
+
 
 #calculate network stats at the individual level, output into usable data frame
-sex.trts.mix<-lapply(nets.mix.clean,function(x) calcSpec(x))
+sex.trts.mix<-mclapply(nets.mix.clean,function(x) calcSpec(x), mc.cores = cores)
 
-write.csv(sex.trts.mix, file='data/sex_mix_test.csv')
+## confirm that the values are different
+#sex.trts.mix[[1]] %>%
+#	filter(Site == "Zamora", Year == 2014)
 
+#write.csv(sex.trts.mix, file='data/sex_trts_mix.csv') #result here is 2.3 GB...
+save(sex.trts.mix,file='data/sex_trts_mix.RData') #much better at 432 MB
+
+
+#Sys.getenv("GITHUB_PAT")
+pb_upload("data/sex_trts_mix.RData",
+			name="sex_trts_mix.RData",
+            tag="data.v.1")
+pb_upload("data/mix_nets.RData",
+			name="mix_nets.RData",
+            tag="data.v.1")
 
 
 
