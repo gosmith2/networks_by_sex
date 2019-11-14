@@ -33,7 +33,6 @@ breakNet <- function(spec.dat, site, year){
 
 breakNetMix <- function(spec.dat, site, year, mix){
   ## puts data together in a list and removes empty matrices
-  #browser()
   agg.spec <- aggregate(list(abund=spec.dat[,mix]),
                         list(GenusSpeciesMix=spec.dat[,mix],
                              Site=spec.dat[,site],
@@ -45,6 +44,7 @@ breakNetMix <- function(spec.dat, site, year, mix){
   networks <- lapply(sites, function(x){
     split(x, f=x[,"Year"])
   })
+
   ## formats data matrices appropriate for network analysis
   comms <- lapply(unlist(networks, recursive=FALSE), function(y){
     samp2site.spp(site=y[,"PlantGenusSpecies"],
@@ -172,14 +172,29 @@ getSpec <- function(species.lev, names.net, seps="_"){
 
 #build a large heirarcical list of networks where sex is randomized
 
-ran.sex<-function(spec.data){
-  col.ls<-lapply(unique(spec.data$SiteYr),function(x){
-    net<-filter(spec.data,SiteYr==x)
+
+removeNets <- function(spec.data) {
+  #narrows down to each site+year combo, then only keeps the networks
+  #where at least 1 species has both sexes present
+  col.ls <- lapply(unique(spec.data$SiteYr),function(x){
+    if(length(unique(spec.data$GenusSpeciesSex[spec.data$SiteYr==x]))
+       >
+       length(unique(spec.data$GenusSpecies[spec.data$SiteYr==x]))){
+      filter(spec.data,SiteYr==x)
+  }})
+  col.ls <- col.ls[!sapply(col.ls, is.null)]
+  return(do.call(rbind, col.ls))
+}
+
+#this one without the network remove code that I put into removeNets
+ran.sex <- function(spec.data){
+  col.ls <- lapply(unique(spec.data$SiteYr),function(x){
+    net <- filter(spec.data,SiteYr==x)
     sp.mix.col <-lapply(unique(net$GenusSpecies), function(y){
-   #   browser()
+      #   browser()
       sp<-filter(net,net$GenusSpecies==y)
       if(length(unique(sp$Sex)) != 1){
-      sp$MixSex<-sample(sp$Sex,replace=FALSE)
+        sp$MixSex<-sample(sp$Sex,replace=FALSE)
       }else{
         sp$MixSex <- sp$Sex
       }
@@ -189,25 +204,29 @@ ran.sex<-function(spec.data){
   return(do.call(rbind, unlist(col.ls, recursive=FALSE)))
 }
 
-#mclapply in the parallel package
 
 ran.gen<-function(spec.data,iterations,cores){
-  #setup: add column to actual observation df and initiate list
+  #setup: add column to actual observation df
   spec.data$MixSex<-spec.data$Sex
   spec.data$GenusSpeciesMix<-paste(spec.data$GenusSpecies,
                                    spec.data$MixSex,
                                    sep="_")
-  destList<-list() 
-  destList[[1]]<-spec.data
   
-  #scramble sex column for within each species within each site
+  #Keep only networks where at least one sp has both sexes
+  spec.keeps <- removeNets(spec.data)
+  
+  #innitiate list
+  destList<-list() 
+  destList[[1]]<-spec.keeps
+  
+  #scramble sex column within each species within each network
   it.vec<-1:iterations
   randoms<-mclapply(it.vec, function(z){
-    spec.data<-ran.sex(spec.data)
-    spec.data$GenusSpeciesMix<-paste(spec.data$GenusSpecies,
-                                     spec.data$MixSex,
+    spec.keeps<-ran.sex(spec.keeps)
+    spec.keeps$GenusSpeciesMix<-paste(spec.keeps$GenusSpecies,
+                                     spec.keeps$MixSex,
                                      sep="_")
-    return(spec.data)
+    return(spec.keeps)
   }, mc.cores = cores)
   destList<-c(destList,randoms)
   return(destList)

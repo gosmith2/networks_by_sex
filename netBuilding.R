@@ -3,11 +3,11 @@
 
 
 ##this should be run on lauren's computer via terminal (git bash): 
-ssh gsmith@osmia.dyn.ucr.edu 
+#ssh gsmith@osmia.dyn.ucr.edu 
 #ip is: 138.23.14.130
-cd Documents
+#cd Documents
 #git clone https://github.com/gosmith2/networks_by_sex.git
-cd Documents/networks_by_sex
+#cd Documents/networks_by_sex
 
 rm(list=ls())
 library(piggyback)
@@ -25,13 +25,13 @@ library(parallel)
 source('misc.R')
 source('prepNets.R')
 
-Sys.getenv("GITHUB_PAT")
-pb_download("specimens-yos.csv",
-            dest="specimens-yos.csv",
-            tag="data.v.1")
-pb_download("specimens-hr.RData",
-            dest="specimens-hr.RData",
-            tag="data.v.1")
+#Sys.getenv("GITHUB_PAT")
+#pb_download("specimens-yos.csv",
+#            dest="specimens-yos.csv",
+#            tag="data.v.1")
+#pb_download("specimens-hr.RData",
+#            dest="specimens-hr.RData",
+#            tag="data.v.1")
 
 
 ####--------------------------####
@@ -92,7 +92,7 @@ build.nets(spec.y,"yos") #uses the breakNets and breakNetsSex fxns to
 #pb_download("specimens-hr.RData",
 #            dest="data/specimens-hr.RData",
 #            tag="data.v.1")
-load("data/specimens-hr.RData",verbose=TRUE) 
+load("data/specimens_hr.RData",verbose=TRUE) 
   #For whatever reason, resulting df is called "dd"
 spec.h<-dd
 
@@ -153,10 +153,10 @@ bind_rows(select(spec.y,keeps),
 
 spec.all$SiteYr<-paste(spec.all$Site,spec.all$Year)
 
-cores <- 3
+cores <- 1
 
 #randomize the sexes w/in species w/in sites
-rand.sexes.ls<-ran.gen(spec.all,999,cores)
+rand.sexes.ls<-ran.gen(spec.all,3,cores)
 
 ## checking that they mixed
 #rand.sexes.ls[[1]] %>%
@@ -188,8 +188,7 @@ sex.trts.mix<-mclapply(nets.mix.clean,function(x) calcSpec(x), mc.cores = cores)
 #sex.trts.mix[[1]] %>%
 #	filter(Site == "Zamora", Year == 2014)
 
-#write.csv(sex.trts.mix, file='data/sex_trts_mix.csv') #result here is 2.3 GB...
-save(sex.trts.mix,file='data/sex_trts_mix.RData') #much better at 432 MB
+save(sex.trts.mix,file='data/sex_trts_tst.RData') #much better at 432 MB
 
 
 #Sys.getenv("GITHUB_PAT")
