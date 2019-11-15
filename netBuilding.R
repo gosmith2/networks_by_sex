@@ -136,7 +136,7 @@ build.nets(spec.h,"hr")
 ####--------------------------####
 
 #observed networks
-ssy.ls <- c(yos_SSY,hr_SSY)
+#ssy.ls <- c(yos_SSY,hr_SSY)
 
 ##randomizing males and females for nulls
 keeps<-c("UniqueID",
@@ -153,10 +153,10 @@ bind_rows(select(spec.y,keeps),
 
 spec.all$SiteYr<-paste(spec.all$Site,spec.all$Year)
 
-cores <- 1
+cores <- 3
 
-#randomize the sexes w/in species w/in sites
-rand.sexes.ls<-ran.gen(spec.all,3,cores)
+#randomize the sexes w/in species w/in sites. observed network is element 1
+rand.sexes.ls<-ran.gen(spec.all,999,cores)
 
 ## checking that they mixed
 #rand.sexes.ls[[1]] %>%
@@ -178,7 +178,7 @@ nets.mix.clean<-mclapply(nets.mix, function(x){
 }, mc.cores=cores)
 
 #save the networks themselves
-save(nets.mix.clean, file = 'data/mix_nets.RData')
+save(nets.mix.clean, file = 'data/mix_netsYH.RData')
 
 
 #calculate network stats at the individual level, output into usable data frame
@@ -188,14 +188,14 @@ sex.trts.mix<-mclapply(nets.mix.clean,function(x) calcSpec(x), mc.cores = cores)
 #sex.trts.mix[[1]] %>%
 #	filter(Site == "Zamora", Year == 2014)
 
-save(sex.trts.mix,file='data/sex_trts_tst.RData') #much better at 432 MB
+save(sex.trts.mix,file='data/sex_trts_mixYH.RData')
 
 
 #Sys.getenv("GITHUB_PAT")
-pb_upload("data/sex_trts_mix.RData",
-			name="sex_trts_mix.RData",
+pb_upload("data/sex_trts_mixYH.RData",
+			name="sex_trts_mixYH.RData",
             tag="data.v.1")
-pb_upload("data/mix_nets.RData",
+pb_upload("data/mix_netsYH.RData",
 			name="mix_nets.RData",
             tag="data.v.1")
 
@@ -214,162 +214,12 @@ pb_upload("data/mix_nets.RData",
 
 ###############################################
 
-#spec.all %>%
-#  filter(SiteYr=="Zamora 2014")->
-#  zam14.all
-
-#ran.zam<-ran.sex(zam14.all)
-
-#ram.zam <- do.call(rbind, unlist(ran.zam, recursive=FALSE))
-
-#ram.zam %>%
-#  filter(SiteYr=="Zamora 2014") %>%
-#  (length(unique(sp$Sex)) != 1)
-#  head()
-
-
-sex_trts.df %>%
-  filter(sex=="_") %>%
-  select(GenusSpecies,Site)
-
-#calculating network traits for males and females
-sex_traits <- lapply(ssy.ls,function(x){
-  y<-try(specieslevel(x))
-  if(inherits(y, "try-error")) browser()
-  return(y)
-}
-)
-
-
-sex_trts.df
-sex_trts.df$degree
-all(sapply(ssy.ls,dim)>1) 
-
-
-#remove the lower level (plants) to simplify indexing
-pol_traits <- lapply(sex_traits,function(x){
-  x[1]
-    }
-    )
-
-poll_nodeSpecF <- lapply(sex_traits,function(x){
-  lapply(x$'higher level',function(y){
-    lapply(rownames(y),function(z){
-      str_extract(z,"_.")
-    }
-    )
-  }
-  )
-}
-)
-poll_nodeSpecF
-    
-poll_f <- ifelse(
-  lapply(sex_traits,function(x){
-    lapply(x$'higher level',function(y){
-      lapply(rownames(y),function(z){
-        str_extract(z,"_.")
-    })})})=="_f",
-  
-    )
-  }
-  )
-}
-)
-
-spec.h %>%
-  filter(Sex!="f",Sex!="m") %>%
-  select(Sex,GenusSpecies)
-
-spec.y %>%
-  filter(Genus=="Triepeolus") %>%
-  select(Sex,GenusSpecies,GenusSpeciesSex)
-
-
 
 
 #traceback. 
 #sapply(nets, dim)<-give me all dimensions to see if any are actually vectors
 #encircle area thats breaking with "try()"
   #then, "if(inherits(sl, "try-error")) browser()"
-
-
-
-## *******************************************************************
-## create a giant network to calculate specialization etc. acorss all
-## SI
-## *******************************************************************
-
-
-#tst<-data.frame(SiteYr=c("a","a","a","b","b","c","c","c"),
-#                ID=c(1:8),
-#                GenusSpecies=c(1,1,2,1,1,3,3,3),
-#                Sex=c("f","m","f","m","m","f","m","f"))
-
-
-
-
-#tst$mix<-unlist(ran.sex(tst))
-
-#tst.ls<-numeric()
-#tst.ls[1]<-tst
-
-
-#tst.ls<-ran.gen(tst,3)
-
-
-#x$'higher level'$'node.specialisation.index.NSI'
-#})
-
-
-#tst<-sapply(rownames(sex_traits$Zamora.2014$'higher level'),function(x){
-#  strsplit(x, split="_")
-#})
-
-#tst3<-sapply(rownames(sex_traits$Zamora.2014$'higher level'),function(x){
-#  str_extract(x,"_.")
-#})
-#tst3
-
-agg.spec <- aggregate(list(abund=spec$GenusSpecies),
-                      list(GenusSpecies=spec$GenusSpecies,
-                           PlantGenusSpecies=spec$PlantGenusSpecies),
-                      length)
-
-nets.all <- samp2site.spp(agg.spec$PlantGenusSpecies,
-                          agg.spec$GenusSpecies,
-                          agg.spec$abund, FUN=sum)
-
-all.traits <- specieslevel(nets.all)
-## calculate rarified plant.pol degree
-rare.plants.degree <- apply(nets.all, 1, chao1)
-rare.pols.degree <- apply(nets.all, 2, chao1)
-
-traits <- data.frame(GenusSpecies= unlist(sapply(all.traits,
-                                                 rownames)),
-                     do.call(rbind, all.traits))
-
-traits$r.degree <-  rare.pols.degree[match(traits$GenusSpecies,
-                                           names(rare.pols.degree))]
-traits$r.degree[is.na(traits$r.degree)] <-
-  rare.plants.degree[match(traits$GenusSpecies[is.na(traits$r.degree)],
-                           names(rare.plants.degree))]
-
-rownames(traits) <- NULL
-
-write.csv(traits, file='../data/traits.csv')
-
-
-save(sp.lev, file='../data/splev.Rdata')
-
-#Drop Mariani 2012, MC1.2014, and H16.2012: too few interactions to calculate network parameters 
-#m12<- spec.h$Site == "Mariani" & spec.h$Year == "2012"
-#mc14<- spec.h$Site == "MC1" & spec.h$Year == '2014'
-#h12<- spec.h$Site == "H16" & spec.h$Year == '2012'
-#spec.h<-spec.h[!m12,]
-#spec.h<-spec.h[!mc14,]
-#spec.h<-spec.h[!h12,]
-
 
 
 

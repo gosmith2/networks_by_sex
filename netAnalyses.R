@@ -16,27 +16,32 @@ source('misc.R')
 source('prepNets.R')
 
 #Sys.getenv("GITHUB_PAT")
-#pb_download("sex_trts_mix.RData",
+#pb_download("sex_trts_mixYH.RData",
 #            dest="data",
 #            tag="data.v.1")
-#pb_download("mix_nets.RData",
+#pb_download("mix_netsYH.RData",
 #            dest="data",
 #            tag="data.v.1")
 
-load("data/sex_trts_tst.RData")
-load("data/mix_nets.RData")
+load("data/sex_trts_mixYH.RData")
+load("data/mix_netsYH.RData")
 
 
 #clean up the datasets, add some necessary columns to speed things up
-traits.ls <- lapply(sex.trts.mix, function(x){
+traits.ls <- lapply(sex.trts.mixYH, function(x){
   x$SiteYr <- paste(x$Site, x$Year, sep="_")
   x$Sp <- gsub( "_.*$", "", x$GenusSpecies )
   x <- filter(x,x$sex == "m" | x$sex == "f")
   return(x)
 })
-trait.test<-traits.ls[1:3]
+#trait.test<-traits.ls[1:3]
 
 makeLogRatio <- function(data, metrics) {
+  ## takes the sex-level network traits of the pollinators and calculates
+  ## the log ratio between males and females within each species and 
+  ## network. Within each network, it also drops any species where only
+  ## one sex was caught.
+  
   som <- lapply(data, function(x){
     
     #narrow down to each unique Site+Year combo
@@ -75,11 +80,20 @@ makeLogRatio <- function(data, metrics) {
   })
   return(som)
 }
-metric<-c("degree","species.strength")
-tst.df<-makeLogRatio(traits.ls, metric)
+
+#specify the metrics I'll be looking at
+metric.ls <- c("degree","species.strength","weighted.betweenness","weighted.closeness" )
+
+#calculate how different males and females are in each iteration
+logRatios.df <- makeLogRatio(traits.ls, metric.ls)
 
 
 calcNullProp <- function(data, metrics, zscore=TRUE) {
+  ## calculates the zscore of the observed difference between male and
+  ## female pollinators of each species within the larger distribution
+  ## of that difference across all iterations. Can alternatively give
+  ## the proportion of iterations greater than the observed value
+  
   #give each element of the long list a unique number
   sim.vec <- seq(1:length(data))
   named.ls <- lapply(sim.vec, function(x) {
@@ -90,7 +104,7 @@ calcNullProp <- function(data, metrics, zscore=TRUE) {
                                 sep="_")
     return(data[[x]])
   })
-  #browser()
+
   #combine all the simulation iterations together into single element
   dist.df <- do.call(rbind, named.ls)
 
@@ -115,15 +129,20 @@ calcNullProp <- function(data, metrics, zscore=TRUE) {
     mets$SpSiteYr <- y
     return(mets)
   })
-  #browser()
+
   #bind these all together
   sig.dist <- do.call(rbind,sigLevel)
   return(sig.dist)
 }
 
-tst.sig <- calcNullProp(tst.df,metric,zscore=TRUE)
+zscores.ls <- calcNullProp(logRatios.df, metric.ls ,zscore=TRUE)
 
 overallTest <- function(prop.dist, metrics, tails = 1, zscore = TRUE) {
+  ## calculates the proportion of z scores above a threshold based
+  ## on tails (5% for 1 tail, 2.5% each direction for 2). Can alternatively
+  ## give the proportion of sp+site+yr observations whose iterations
+  ## differed from the observed over 95% of the time
+  
   alpha <- lapply(metrics, function(x){
     if(tails == 1){
       if(zscore == TRUE) {
@@ -144,14 +163,15 @@ overallTest <- function(prop.dist, metrics, tails = 1, zscore = TRUE) {
   return(alpha)
 }
 
-overallTest(tst.sig,metric,zscore=TRUE)
-
-#add a toggle in for z scores (which would be good as some sort of measure of effect size between metrics)
-#plotting: density shaded plot, single line at obs. just like she did on that paper
-
-#for final project: above, density plot, make map w/ lat longs 
+overallTest(zscores.ls,metric.ls,zscore=TRUE)
 
 spLevelTest <- function(prop.dist, metrics,zscore=TRUE, tails=1) {
+  ## calculates the proportion of z scores above a threshold based
+  ## on tails (5% for 1 tail, 2.5% each direction for 2) for each
+  ## species in the dataset separately. Can alternatively give the 
+  ## proportion of sp+site+yr observations whose iterations
+  ## differed from the observed over 95% of the time
+  
   prop.dist$Sp <- gsub( "_.*$", "", prop.dist$SpSiteYr)
   spp <- lapply (unique(prop.dist$Sp),function(x){
     sp <- filter(prop.dist, prop.dist$Sp == x)
@@ -165,13 +185,21 @@ spLevelTest <- function(prop.dist, metrics,zscore=TRUE, tails=1) {
   return(spp.sig)
 }
 
-spLevelTest(tst.sig,metric)
+spLevelTest(zscores.ls,metric.ls)
+
+#plotting: density shaded plot, single line at obs. just like she did on that paper
+
+#for final project: above, density plot, make map w/ lat longs 
 
 
+####################################
 
-head(sex_trts.df)
+##Below was exploratory, not run now
 
-bargraph.CI(response=sex_trts.df$d,x.factor=sex_trts.df$sex)
+####################################
+
+
+#bargraph.CI(response=sex_trts.df$d,x.factor=sex_trts.df$sex)
 
 #Exploratory: 
 ##females higher degree (1.8 vs 1.45ish). same pattern diff #s for normalized
@@ -191,25 +219,3 @@ bargraph.CI(response=sex_trts.df$d,x.factor=sex_trts.df$sex)
 ##females slightly higher prop generality (0.4 vs 0.35)
 ##females slightly higher prop similarity (0.42 vs 0.38)
 ## d essentially the same
-
-#closeness, betweenness, degree, str
-
-
-
-
-#fxn "sample", loop (apply) over sites, over species, then reorganize sex based on the vector
-#end goal: probably giant heirarcical list. each element is essentially equivalent to ssy.ls or sex_trts.df. 
-  #should be 1000 total: 999 random + real. 
-
-
-#mclapply: can run a whole bunch of things in parallel to run through the stuff quickly
-
-
-
-
-
-nlme
-
-sex_trts.df %>%
-  filter(sex=="_") %>%
-  select(GenusSpecies,Site)
