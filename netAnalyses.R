@@ -36,8 +36,8 @@ traits.ls <- lapply(sex.trts.mix, function(x){
 })
 trait.test<-traits.ls[1:3]
 
-makeLogRatio <- function(metrics) {
-  som <- lapply(traits.ls, function(x){
+makeLogRatio <- function(data, metrics) {
+  som <- lapply(data, function(x){
     
     #narrow down to each unique Site+Year combo
     col.ls <- lapply(unique(x$SiteYr),function(y){
@@ -76,26 +76,96 @@ makeLogRatio <- function(metrics) {
   return(som)
 }
 metric<-c("degree","species.strength")
-tst.df<-makeLogRatio(metric)
+tst.df<-makeLogRatio(traits.ls, metric)
 
-tst.df[[1]] %>%
-  filter(species == "Toxomerus marginatus") %>%
-  filter(sex == "f" | sex == "m")
 
-#take nulls
- # metrics, site, sex, sp. year, 
-#pull out columns I want
-#toss sp for which we don't have both males and females
-#  log(m/f) for each site, yr, sp
+calcNullProp <- function(data, metrics, zscore=TRUE) {
+  #give each element of the long list a unique number
+  sim.vec <- seq(1:length(data))
+  named.ls <- lapply(sim.vec, function(x) {
+    #browser()
+    data[[x]]$sim <- rep.int(x,times=length(data[[x]]$SiteYr))
+    data[[x]]$SpSiteYr <- paste(data[[x]]$species,
+                                data[[x]]$SiteYr,
+                                sep="_")
+    return(data[[x]])
+  })
+  #browser()
+  #combine all the simulation iterations together into single element
+  dist.df <- do.call(rbind, named.ls)
+
+  #combine values for sp+yr+site
+  sigLevel <- lapply(unique(dist.df$SpSiteYr), function(y) {
+    #browser()
+    sp <- filter(dist.df, dist.df$SpSiteYr == y)
+    obs <- filter(sp, sp$sim == 1)
+    
+    #calculate the proportion of simulations <= observed
+    mets <- lapply(metrics, function(z) {
+      #browser()
+      if (zscore == TRUE){
+        metZ <- scale(sp[,z],center = TRUE, scale = TRUE)
+        metZobs <- ifelse(is.nan(metZ[1]),0,metZ[1])
+      }else{
+        metprop <- sum(sp[,z] <= obs[,z]) / length(sp$species)
+      }
+    })
+    mets <- data.frame(mets)
+    colnames(mets) <- metrics
+    mets$SpSiteYr <- y
+    return(mets)
+  })
+  #browser()
+  #bind these all together
+  sig.dist <- do.call(rbind,sigLevel)
+  return(sig.dist)
 }
 
-calcNullProp <- function() {
-  #make dist
-  #calc proportion > or .5 equal to observed
-  #outpus prop/1000 >equal site, yr, sex
-  
-  
+tst.sig <- calcNullProp(tst.df,metric,zscore=TRUE)
+
+overallTest <- function(prop.dist, metrics, tails = 1, zscore = TRUE) {
+  alpha <- lapply(metrics, function(x){
+    if(tails == 1){
+      if(zscore == TRUE) {
+        sum(1.645 <= prop.dist[,x]) / length(prop.dist[,x])
+      } else{
+        sum(0.05 >= prop.dist[,x]) / length(prop.dist[,x])
+      }
+    } else {
+      if(zscore == TRUE) {
+        sum(1.96<=prop.dist[,x] | -1.96>=prop.dist[,x]) / length(prop.dist[,x])
+      } else{
+        sum(0.025>=prop.dist[,x] | 0.975<=prop.dist) / length(prop.dist[,x])
+      }
+    }
+  })
+  alpha <- data.frame(alpha)
+  colnames(alpha) <- metrics
+  return(alpha)
 }
+
+overallTest(tst.sig,metric,zscore=TRUE)
+
+#add a toggle in for z scores (which would be good as some sort of measure of effect size between metrics)
+#plotting: density shaded plot, single line at obs. just like she did on that paper
+
+#for final project: above, density plot, make map w/ lat longs 
+
+spLevelTest <- function(prop.dist, metrics,zscore=TRUE, tails=1) {
+  prop.dist$Sp <- gsub( "_.*$", "", prop.dist$SpSiteYr)
+  spp <- lapply (unique(prop.dist$Sp),function(x){
+    sp <- filter(prop.dist, prop.dist$Sp == x)
+    sp.sig <- overallTest(sp, metrics, zscore=zscore, tails=tails)
+    sp.sig$Sp <- x
+    return(sp.sig)
+    #browser()
+  })
+  spp.sig <- do.call(rbind,spp)
+  #browser()
+  return(spp.sig)
+}
+
+spLevelTest(tst.sig,metric)
 
 
 
