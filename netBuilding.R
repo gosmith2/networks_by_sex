@@ -26,12 +26,12 @@ source('misc.R')
 source('prepNets.R')
 
 #Sys.getenv("GITHUB_PAT")
-#pb_download("specimens-yos.csv",
-#            dest="specimens-yos.csv",
-#            tag="data.v.1")
-#pb_download("specimens-hr.RData",
-#            dest="specimens-hr.RData",
-#            tag="data.v.1")
+pb_download("specimens-yos.csv",
+            dest="data",
+            tag="data.v.1")
+pb_download("specimens-hr.RData",
+            dest="data",
+            tag="data.v.1")
 
 
 ####--------------------------####
@@ -92,7 +92,8 @@ build.nets(spec.y,"yos") #uses the breakNets and breakNetsSex fxns to
 #pb_download("specimens-hr.RData",
 #            dest="data/specimens-hr.RData",
 #            tag="data.v.1")
-load("data/specimens_hr.RData",verbose=TRUE) 
+#may have to do the following on Lauren's computer (Osmia):
+load("data/specimens-hr.RData",verbose=TRUE) 
   #For whatever reason, resulting df is called "dd"
 spec.h<-dd
 
@@ -153,7 +154,8 @@ bind_rows(select(spec.y,keeps),
 
 spec.all$SiteYr<-paste(spec.all$Site,spec.all$Year)
 
-cores <- 3
+#cores should be 3 for bombus, 10 for osmia
+cores <- 10
 
 #randomize the sexes w/in species w/in sites. observed network is element 1
 rand.sexes.ls<-ran.gen(spec.all,999,cores)
