@@ -20,9 +20,9 @@ Sys.getenv("GITHUB_PAT")
 pb_download("sex_trts_mixYH.RData",
             dest="data",
             tag="data.v.1")
-#pb_download("mix_netsYH.RData",
-#            dest="data",
-#            tag="data.v.1")
+pb_download("mix_netsYH.RData",
+            dest="data",
+            tag="data.v.1")
 
 load("data/sex_trts_mixYH.RData")
 load("data/mix_netsYH.RData")

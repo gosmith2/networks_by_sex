@@ -198,7 +198,7 @@ pb_upload("data/sex_trts_mixYH.RData",
 			name="sex_trts_mixYH.RData",
             tag="data.v.1")
 pb_upload("data/mix_netsYH.RData",
-			name="mix_nets.RData",
+			name="mix_netsYH.RData",
             tag="data.v.1")
 
 
