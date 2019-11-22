@@ -182,6 +182,7 @@ nets.mix.clean<-mclapply(nets.mix, function(x){
 #save the networks themselves
 save(nets.mix.clean, file = 'data/mix_netsYH.RData')
 
+nets.mix.test <- nets.mix.clean[1:3]
 
 #calculate network stats at the individual level, output into usable data frame
 sex.trts.mix<-mclapply(nets.mix.clean,function(x) calcSpec(x), mc.cores = cores)
@@ -193,6 +194,26 @@ sex.trts.mix<-mclapply(nets.mix.clean,function(x) calcSpec(x), mc.cores = cores)
 save(sex.trts.mix,file='data/sex_trts_mixYH.RData')
 
 
+
+#calculate network-level traits (likely similar b/w obs and sim networks, but checking)
+
+netlvl <- mclapply(nets.mix.clean, function(x){
+  #browser()
+  network.lvl <- lapply(names(x), function(y){
+    #browser()
+    nl <- networklevel(x[[y]])
+    #nl <- data.frame(nl)
+    #nl$SiteYr <- y
+    })
+  
+  traits <- data.frame(do.call(rbind, network.lvl))
+  traits$SiteYr <- names(x)
+  return(traits)
+},mc.cores=cores)
+
+save(netlvl,file="data/netlvlYH.RData")
+
+
 #Sys.getenv("GITHUB_PAT")
 pb_upload("data/sex_trts_mixYH.RData",
 			name="sex_trts_mixYH.RData",
@@ -200,6 +221,7 @@ pb_upload("data/sex_trts_mixYH.RData",
 pb_upload("data/mix_netsYH.RData",
 			name="mix_netsYH.RData",
             tag="data.v.1")
+pb_upload()
 
 
 

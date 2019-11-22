@@ -25,7 +25,7 @@ pb_download("mix_netsYH.RData",
             tag="data.v.1")
 
 load("data/sex_trts_mixYH.RData")
-load("data/mix_netsYH.RData")
+load("data/mix_netsYH.RData") #object: nets.mix.clean
 
 cores <- 1
 
@@ -101,6 +101,15 @@ metric.ls <- c("degree","species.strength","weighted.betweenness","weighted.clos
 
 #calculate how different males and females are in each iteration
 logRatios.df <- makeLogRatio(traits.ls, metric.ls)
+
+save(logRatios.df,file='logRatios.RData')
+pb_upload("logRatios.RData",
+          name="logRatios.RData",
+          tag="data.v.1")
+pb_download("logRatios.RData",
+            dest="data",
+            tag="data.v.1")
+load("data/logRatios.RData")
 
 logRattest.df <- makeLogRatio(trait.test, metric.ls)
 
@@ -297,19 +306,22 @@ genNullDist <- function(data, metrics, mean.by,zscore=TRUE) {
 #is essentially just around zero. like +/-0.3*10^-16. So the actual
 #calculation is incorrect
 
+nullDist.df <- genNullDist(logRatios.df,metric.ls,"sim",zscore=F)
+
+
 nullDist.test <- genNullDist(logRattest.df,metric.ls,"sim",zscore=F)
 
 #this plot is right, i think. doesn't show z scores but looks good
-plot(density(nullDist.test$degree,na.rm = T))
+plot(density(nullDist.df$degree,na.rm = T))
 abline(v=-0.064)
 
 meanDiffObs<-lapply(metric.ls, function(x){
-  mean(logRattest.df[[1]][,x])
+  mean(logRatios.df[[1]][,x])
 })
 
-plot(density(nullDist.test$species.strength,na.rm = T))
-abline(v=-0.156)
-#huh... why do these have the same shape???
+
+plotweb(nets.mix.clean[[1]]$MullerM.2010)
+
 
 #regress amt of difference against absolute specialization? 
   #i.e, are more generalized sp more different b/w males and females?
