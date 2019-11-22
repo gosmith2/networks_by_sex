@@ -17,6 +17,15 @@ source('misc.R')
 source('prepNets.R')
 
 Sys.getenv("GITHUB_PAT")
+
+
+################################################
+
+#Species level network traits
+
+################################################
+
+
 pb_download("sex_trts_mixYH.RData",
             dest="data",
             tag="data.v.1")
@@ -27,9 +36,13 @@ pb_download("mix_netsYH.RData",
 load("data/sex_trts_mixYH.RData")
 load("data/mix_netsYH.RData") #object: nets.mix.clean
 
-cores <- 1
 
-#clean up the datasets, add some necessary columns to speed things up
+#specify the metrics I'll be looking at, number of cores to use
+metric.ls <- c("degree","species.strength","weighted.betweenness","weighted.closeness" )
+
+cores <- 10
+
+##clean up the datasets, add some necessary columns to speed things up
 traits.ls <- 
   mclapply(sex.trts.mix, function(x){
   x$SiteYr <- paste(x$Site, x$Year, sep="_")
@@ -39,11 +52,12 @@ traits.ls <-
   return(x)
 },mc.cores=cores)
 
-trait.test<-traits.ls[1:3]
+#trait.test<-traits.ls[1:3]
 
 #bramlett 2014 and Bray2 2014 both have some NAs, even in [[1]]
 
-makeLogRatio <- function(data, metrics) {
+
+makeLogRatio <- function(data, metrics, comparison="log") {
   ## takes the sex-level network traits of the pollinators and calculates
   ## the log ratio between males and females within each species and 
   ## network. Within each network, it also drops any species where only
@@ -62,16 +76,13 @@ makeLogRatio <- function(data, metrics) {
         #If there are two sexes of that species, get the log ratios of each 
         #metric specified in the metrics argument vector     
         if (length(sp$sex)==2) {
-          ratios<-lapply(metrics, function(a){
-          #put this in to resolve NA errors, but i actually think 
-            #I want to leave those in. networks where a given metric
-            #cant be calculated should be removed later, not coerced
-            #to a zero and used as a value later. 
-          #  if(anyNA(sp[,a])==TRUE) {  
-          #    ratio <- 0
-          #  } else {
-              ratio <- log10(sp[,a][sp$sex == "m"]
-                             /sp[,a][sp$sex == "f"])
+          ratios <- lapply(metrics, function(a){
+              if(comparison = "log"){
+                ratio <- log10(sp[,a][sp$sex == "m"]
+                               /sp[,a][sp$sex == "f"])
+              } else {
+                diff <- sp[,a][sp$sex == "m"] - sp[,a][sp$sex == "f"]
+              }
           #  }
             })
           #browser()
@@ -96,22 +107,31 @@ makeLogRatio <- function(data, metrics) {
   return(som)
 }
 
-#specify the metrics I'll be looking at
-metric.ls <- c("degree","species.strength","weighted.betweenness","weighted.closeness" )
 
 #calculate how different males and females are in each iteration
-logRatios.df <- makeLogRatio(traits.ls, metric.ls)
+logRatios.df <- makeLogRatio(traits.ls, metric.ls, comparison = "log")
 
-save(logRatios.df,file='logRatios.RData')
-pb_upload("logRatios.RData",
+sexDiffs.df <- makeLogRatio(traits.ls, metric.ls, comparison = "diff")
+
+save(logRatios.df, file = 'data/logRatios.RData')
+save(sexDiffs.df, file = 'data/sexDiffs.RData')
+
+pb_upload("data/logRatios.RData",
           name="logRatios.RData",
           tag="data.v.1")
 pb_download("logRatios.RData",
             dest="data",
             tag="data.v.1")
-load("data/logRatios.RData")
 
-logRattest.df <- makeLogRatio(trait.test, metric.ls)
+pb_upload('data/sexDiffs.RData',
+          name='sexDiffs.RData',
+          tag="data.v.1")
+pb_download("sexDiffs.RData",
+            dest="data",
+            tag="data.v.1")
+
+load("data/logRatios.RData")
+load('data/sexDiffs.RData')
 
 calcNullProp <- function(data, metrics, zscore=TRUE) {
   ## calculates the zscore of the observed difference between male and
@@ -168,14 +188,16 @@ zscores.ls <- calcNullProp(logRatios.df, metric.ls ,zscore=TRUE)
 zscores.test<-calcNullProp(logRattest.df, metric.ls ,zscore=TRUE)
 
 #these were long bits, so save above output for later
-save(zscores.ls,file='zscores.RData')
-pb_upload("zscores.RData",
+save(zscores.ls,file='data/zscores.RData')
+
+pb_upload("data/zscores.RData",
           name="zscores.RData",
           tag="data.v.1")
 
 pb_download("zscores.RData",
             dest="data",
             tag="data.v.1")
+
 load("data/zscores.RData")
 
 
@@ -309,7 +331,7 @@ genNullDist <- function(data, metrics, mean.by,zscore=TRUE) {
 nullDist.df <- genNullDist(logRatios.df,metric.ls,"sim",zscore=F)
 
 
-nullDist.test <- genNullDist(logRattest.df,metric.ls,"sim",zscore=F)
+#nullDist.test <- genNullDist(logRattest.df,metric.ls,"sim",zscore=F)
 
 #this plot is right, i think. doesn't show z scores but looks good
 plot(density(nullDist.df$degree,na.rm = T))
@@ -329,6 +351,25 @@ plotweb(nets.mix.clean[[1]]$MullerM.2010)
 #plotting: density shaded plot, single line at obs. just like she did on that paper
 
 #for final project: above, density plot, make map w/ lat longs 
+
+
+
+#######################################################
+
+## Network level traits
+
+#######################################################
+
+pb_download("netlvlYH.RData",
+            dest="data",
+            tag="data.v.1")
+
+load("data/netlvlYH.RData")
+
+nullDistNets.df <- genNullDist(netlvl,metric.ls,"sim",zscore=F)
+
+
+
 
 
 
