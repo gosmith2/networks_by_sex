@@ -77,7 +77,7 @@ makeLogRatio <- function(data, metrics, comparison="log") {
         #metric specified in the metrics argument vector     
         if (length(sp$sex)==2) {
           ratios <- lapply(metrics, function(a){
-              if(comparison = "log"){
+              if(comparison == "log"){
                 ratio <- log10(sp[,a][sp$sex == "m"]
                                /sp[,a][sp$sex == "f"])
               } else {
@@ -99,7 +99,7 @@ makeLogRatio <- function(data, metrics, comparison="log") {
         })
       spp <- spp[!sapply(spp, is.null)]
       return(do.call(rbind, spp))
-      browser()
+      #browser()
       })
     #browser()
     return(do.call(rbind, col.ls))
@@ -130,8 +130,8 @@ pb_download("sexDiffs.RData",
             dest="data",
             tag="data.v.1")
 
-load("data/logRatios.RData")
-load('data/sexDiffs.RData')
+load("data/logRatiosYH.RData")
+load('data/sexDiffs.RData') #object: sexDiffs.df
 
 calcNullProp <- function(data, metrics, zscore=TRUE) {
   ## calculates the zscore of the observed difference between male and
@@ -164,7 +164,7 @@ calcNullProp <- function(data, metrics, zscore=TRUE) {
       #browser()
       if (zscore == TRUE){
         metZ <- scale(sp[,z],center = TRUE, scale = TRUE)
-        metZobs <- ifelse(is.nan(metZ[1]),0,metZ[1]) 
+        #metZobs <- ifelse(is.nan(metZ[1]),0,metZ[1]) 
         #gotta think about NA treatment here too. I kinda think its
         #getting rid of stuff again. Though this may be fixed when
         #I fix stuff above
@@ -185,7 +185,10 @@ calcNullProp <- function(data, metrics, zscore=TRUE) {
 
 zscores.ls <- calcNullProp(logRatios.df, metric.ls ,zscore=TRUE)
 
-zscores.test<-calcNullProp(logRattest.df, metric.ls ,zscore=TRUE)
+sexDiffsProp.df <- calcNullProp(sexDiffs.df, metric.ls ,zscore=F) 
+
+
+#zscores.test<-calcNullProp(logRattest.df, metric.ls ,zscore=TRUE)
 
 #these were long bits, so save above output for later
 save(zscores.ls,file='data/zscores.RData')
@@ -194,12 +197,22 @@ pb_upload("data/zscores.RData",
           name="zscores.RData",
           tag="data.v.1")
 
+save(sexDiffsProp.df,file='data/sexDiffsPropYH.df')
+
+pb_upload("data/sexDiffsPropYH.df",
+          name="sexDiffsPropYH.df",
+          tag="data.v.1")
+
 pb_download("zscores.RData",
             dest="data",
             tag="data.v.1")
 
-load("data/zscores.RData")
+pb_download("sexDiffsPropYH.df",
+            dest="data",
+            tag="data.v.1")
 
+load("data/zscores.RData")
+load("data/sexDiffsPropYH.df")
 
 
 overallTest <- function(prop.dist, metrics, tails = 1, zscore = TRUE) {
@@ -236,6 +249,10 @@ overallTest(zscores.ls,metric.ls,zscore=TRUE)
 #returned: proportion of observations where m vs f differed. 
 #near 0 = few differed significantly, near 1 = many differed significantly
   ## deg = 0.046, str = 0.056, weighted btw: NA, weighted close NA
+
+
+overallTest(sexDiffsProp.df,metric.ls,zscore=F)
+  #
 
 spLevelTest <- function(prop.dist, metrics,zscore=TRUE, tails=1) {
   ## calculates the proportion of z scores above a threshold based
@@ -298,7 +315,8 @@ genNullDist <- function(data, metrics, mean.by,zscore=TRUE) {
   #combine all the simulation iterations together into single element
   dist.df <- do.call(rbind, named.ls)
   
-  #extract an average value w/in each siteyr across sims
+  #extract an average value w/in each [mean.by] (e.g., mean.by="sim" 
+  #would calculate a single mean value w/in each simulation across sites
   dist.build <- mclapply(unique(dist.df[,mean.by]), function(y) {
     #browser()
     net <- filter(dist.df, dist.df[,mean.by] == y)
@@ -310,7 +328,7 @@ genNullDist <- function(data, metrics, mean.by,zscore=TRUE) {
       if (zscore == TRUE){
         mean.Z <- mean(scale(net[,z],center=T,scale=T),na.rm=T)
       }else{
-        mean.value <- mean(net[,z])
+        mean.value <- mean(net[,z],na.rm=T)
       }
     })
     mets <- data.frame(mets)
@@ -329,20 +347,56 @@ genNullDist <- function(data, metrics, mean.by,zscore=TRUE) {
 #calculation is incorrect
 
 nullDist.df <- genNullDist(logRatios.df,metric.ls,"sim",zscore=F)
+save(nullDist.df,file='data/nullDist.RData')
+
+
+nullDistDiff.df <- genNullDist(sexDiffs.df,metric.ls,"sim",zscore=F)
+save(nullDistDiff.df,file='data/nullDistDiff.RData')
+
+
+pb_upload("data/nullDist.RData",
+          name="nullDist.RData",
+          tag="data.v.1")
+
+pb_download("nullDist.RData",
+            dest="data",
+            tag="data.v.1")
+
+pb_upload("data/nullDistDiff.RData",
+          name="nullDistDiff.RData",
+          tag="data.v.1")
+
+pb_download("nullDistDiff.RData",
+            dest="data",
+            tag="data.v.1")
 
 
 #nullDist.test <- genNullDist(logRattest.df,metric.ls,"sim",zscore=F)
+
+
+meanObsZ<-lapply(metric.ls, function(x){
+  mean(logRatios.df[[1]][,x])
+})
+meanObsDiff<-lapply(metric.ls, function(x){
+  mean(sexDiffs.df[[1]][,x],na.rm=T)
+})
 
 #this plot is right, i think. doesn't show z scores but looks good
 plot(density(nullDist.df$degree,na.rm = T))
 abline(v=-0.064)
 
-meanDiffObs<-lapply(metric.ls, function(x){
-  mean(logRatios.df[[1]][,x])
-})
+#density plot for degree, absolute differences
+plot(density(nullDistDiff.df$degree,na.rm = T))
+abline(v=-0.3405)
 
+plot(density(nullDistDiff.df$species.strength,na.rm = T))
+abline(v=-0.15997)
 
-plotweb(nets.mix.clean[[1]]$MullerM.2010)
+plot(density(nullDistDiff.df$weighted.betweenness,na.rm = T))
+abline(v=-0.03925)
+
+plot(density(nullDistDiff.df$weighted.closeness,na.rm = T))
+abline(v=-0.00866)
 
 
 #regress amt of difference against absolute specialization? 
@@ -366,11 +420,131 @@ pb_download("netlvlYH.RData",
 
 load("data/netlvlYH.RData")
 
-nullDistNets.df <- genNullDist(netlvl,metric.ls,"sim",zscore=F)
+overallTest(netlvl,metric.net,zscore=F)
 
 
+metric.net <- c('connectance', 
+                'number.of.compartments',
+                'nestedness',
+                'NODF',
+                'robustness.HL',
+                'robustness.LL',
+                'vulnerability.LL',
+                'H2',
+                'niche.overlap.HL',
+                'niche.overlap.LL',                  
+                'functional.complementarity.HL',
+                'functional.complementarity.LL')
+
+calcNullPropNets <- function(data, metrics, zscore=TRUE) {
+  ## calculates the zscore of the observed difference between male and
+  ## female pollinators of each species within the larger distribution
+  ## of that difference across all iterations. Can alternatively give
+  ## the proportion of iterations greater than the observed value
+  
+  #give each element of the long list a unique number
+  sim.vec <- seq(1:length(data))
+  named.ls <- mclapply(sim.vec, function(x) {
+    #browser()
+    data[[x]]$sim <- rep.int(x,times=length(data[[x]]$SiteYr))
+    return(data[[x]])
+  },mc.cores=cores)
+  
+  #combine all the simulation iterations together into single element
+  dist.df <- do.call(rbind, named.ls)
+  
+  #combine values for sp+yr+site
+  sigLevel <- mclapply(unique(dist.df$SiteYr), function(y) {
+    #browser()
+    site <- filter(dist.df, dist.df$SiteYr == y)
+    obs <- filter(site, site$sim == 1)
+    
+    #calculate the proportion of simulations <= observed
+    mets <- lapply(metrics, function(z) {
+      #browser()
+      if (zscore == TRUE){
+        metZ <- scale(site[,z],center = TRUE, scale = TRUE)
+        #metZobs <- ifelse(is.nan(metZ[1]),0,metZ[1]) 
+        #gotta think about NA treatment here too. I kinda think its
+        #getting rid of stuff again. Though this may be fixed when
+        #I fix stuff above
+      }else{
+        metprop <- sum(site[,z] <= obs[,z]) / length(site$SiteYr)
+      }
+    })
+    mets <- data.frame(mets)
+    colnames(mets) <- metrics
+    mets$SiteYr <- y
+    return(mets)
+  },mc.cores=cores)
+  
+  #bind these all together
+  sig.dist <- do.call(rbind,sigLevel)
+  return(sig.dist)
+}
+
+diffsNets.df <- calcNullPropNets(netlvl,metric.net,zscore=F) #quick
+
+overallTest(diffsNets.df,metric.net,zscore=F)
+  #yes, def some differences here. not all of them really really sig, but for sure
+  
 
 
+genNullDistNets <- function(data, metrics, mean.by,zscore=TRUE) {
+  
+  #give each element of the long list a unique number
+  sim.vec <- seq(1:length(data))
+  named.ls <- mclapply(sim.vec, function(x) {
+    #browser()
+    data[[x]]$sim <- rep.int(x,times=length(data[[x]]$SiteYr))
+    return(data[[x]])
+  },mc.cores=cores)
+  
+  #combine all the simulation iterations together into single element
+  dist.df <- do.call(rbind, named.ls)
+  
+  #extract an average value w/in each mean.by
+  dist.build <- mclapply(unique(dist.df[,mean.by]), function(y) {
+    net <- filter(dist.df, dist.df[,mean.by] == y)
+    obs <- filter(net, net$sim == 1)
+    
+    #calculate the proportion of simulations <= observed
+    mets <- lapply(metrics, function(z) {
+      browser()
+      if (zscore == TRUE){
+        mean.Z <- mean(scale(net[,z],center=T,scale=T),na.rm=T)
+      }else{
+        mean.value <- mean(net[,z])
+      }
+    })
+    mets <- data.frame(mets)
+    colnames(mets) <- metrics
+    mets$mean.by <- y
+    return(mets)
+  },mc.cores=cores)
+  
+  #bind these all together
+  sig.dist <- do.call(rbind,dist.build)
+  return(sig.dist)
+}
+
+nullDistNets.df <- genNullDistNets(netlvl,metric.net,"sim",zscore=F)
+
+save(nullDistNets.df,file="data/nullDistNetsYH.RData")
+
+pb_upload("data/nullDistNetsYH.RData",
+          name="nullDistNetsYH.RData",
+          tag="data.v.1")
+pb_download("nullDistNetsYH.RData",
+          dest="data",
+          tag="data.v.1")
+
+meanObsDiffNet<-lapply(metric.net, function(x){
+  mean(netlvl[[1]][,x],na.rm=T)
+})
+
+plot(density(nullDistNets.df$robustness.HL,na.rm = T))
+abline(v=meanObsDiffNet[5])
 
 
 
