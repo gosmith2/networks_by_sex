@@ -4,7 +4,6 @@
 
 ##this should be run on lauren's computer via terminal (git bash): 
 #ssh gsmith@osmia.dyn.ucr.edu 
-#ip is: 138.23.14.130
 #cd Documents
 #git clone https://github.com/gosmith2/networks_by_sex.git
 #cd Documents/networks_by_sex
@@ -21,6 +20,7 @@ library(stringr)
 library(nlme)
 library(sciplot)
 library(parallel)
+library(SYNCSA)
 
 source('misc.R')
 source('prepNets.R')
@@ -72,17 +72,6 @@ spec.y$YearSR <- paste(spec.y$Year,
                        spec.y$SampleRound, 
                        sep=".")
 
-### site-level networks
-build.nets(spec.y,"yos") #uses the breakNets and breakNetsSex fxns to
-#aggregate and then samp2site larger network into chunks
- 
-#save(yos_GSSY,yos_GSY,yos_SSY,yos_SY, file="data/yos_nets.Rdata")
-
-#sp.lev <- calcSpec(nets, spec)
-
-#save(spec, file="../data/spec.Rdata")
-#write.csv(spec, file="../data/spec.csv", row.names=FALSE)
-
 
 ####--------------------------####
 #### Hedgerow
@@ -125,26 +114,17 @@ spec.h$YearSR <- paste(spec.h$Year,
                        sep=".")
 
 
-### site-level networks
-build.nets(spec.h,"hr")
-
-#save(hr_GSSY,hr_GSY,hr_SSY,hr_SY, file="data/hr_nets.Rdata")
-
-
 
 ####--------------------------####
 #### Combining network lists
 ####--------------------------####
 
-#observed networks
-#ssy.ls <- c(yos_SSY,hr_SSY)
-
-##randomizing males and females for nulls
 keeps<-c("UniqueID",
           "GenusSpecies",
           "Site",
           "Year",
           "PlantGenusSpecies",
+          "GenusSpecies",
           "GenusSpeciesSex",
           "Sex")
 
@@ -153,6 +133,13 @@ bind_rows(select(spec.y,keeps),
   spec.all
 
 spec.all$SiteYr<-paste(spec.all$Site,spec.all$Year)
+
+
+
+####-------------------------------------------####
+#### Randomizing m and f for specieslevel analyses
+####-------------------------------------------####
+
 
 #cores should be 3 for bombus, 10 for osmia
 cores <- 10
@@ -193,8 +180,6 @@ sex.trts.mix<-mclapply(nets.mix.clean,function(x) calcSpec(x), mc.cores = cores)
 
 save(sex.trts.mix,file='data/sex_trts_mixYH.RData')
 
-
-
 #calculate network-level traits (likely similar b/w obs and sim networks, but checking)
 
 netlvl <- mclapply(nets.mix.clean, function(x){
@@ -226,36 +211,38 @@ pb_upload("netlvlYH.RData",
           tag="data.v.1")
 
 
+####----------------------------####
+#### Prep for networklevel analyses
+####----------------------------####
+
+metric.net <- c('connectance', 
+                'number of compartments',
+                'nestedness',
+                'NODF',
+                'H2',
+                'robustness',
+                'vulnerability',
+                'niche overlap',
+                'functional complementarity')
+
+N = 3
+
+#all networks, with males and females included separately
+nets.obs.sex<-breakNetMix(spec.all,'Site','Year',"GenusSpeciesSex")
+
+stats.sex <- mclapply(nets.obs.sex, 
+                      calcNetworkMetrics, 
+                      N=N,
+                      index=metric.net,
+                      mc.cores=cores)
+
+#all networks, males and females lumped into species
+nets.obs.sp <- breakNet(spec.all,'Site','Year')
+
+
+#all networks, males dropped
+spec.all.drop <- filter(spec.all, spec.all$Sex=="f")
+nets.obs.f <- breakNet(spec.all.drop,'Site','Year')
 
 
 
-###############################################
-
-#below here is misc code that I don't run
-
-
-##############################################
-
-
-###############################################
-
-
-
-#traceback. 
-#sapply(nets, dim)<-give me all dimensions to see if any are actually vectors
-#encircle area thats breaking with "try()"
-  #then, "if(inherits(sl, "try-error")) browser()"
-
-
-
-## checks
-table(spec$GenusSpecies)
-
-tab <- table(spec$GenusSpecies, spec$Site)
-tab2 <- table(spec$PlantGenusSpecies, spec$Site)
-
-table(spec$PlantGenusSpecies)
-table(spec$PlantGenusSpecies, spec$Site)
-table(spec$PlantGenusSpecies, spec$Year)
-
-table(spec$PlantGenusSpecies, spec$Family)
