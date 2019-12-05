@@ -25,7 +25,8 @@ Sys.getenv("GITHUB_PAT")
 
 ################################################
 
-
+###------------------
+## Setup
 pb_download("sex_trts_mixYH.RData",
             dest="data",
             tag="data.v.1")
@@ -35,7 +36,6 @@ pb_download("mix_netsYH.RData",
 
 load("data/sex_trts_mixYH.RData")
 load("data/mix_netsYH.RData") #object: nets.mix.clean
-
 
 #specify the metrics I'll be looking at, number of cores to use
 metric.ls <- c("degree","species.strength","weighted.betweenness","weighted.closeness" )
@@ -53,12 +53,18 @@ traits.ls <-
 },mc.cores=cores)
 
 
+###------------------
+##calculate how different males and females within each species
+##within each SiteYr are in each iteration
 
-#calculate how different males and females are in each iteration
 logRatios.df <- makeComp(traits.ls, metric.ls, comparison = "log")
+  #log10 (male / female)
 
 sexDiffs.df <- makeComp(traits.ls, metric.ls, comparison = "diff")
+  #males - females
 
+
+## Saving and uploading after that long step
 save(logRatios.df, file = 'data/logRatios.RData')
 save(sexDiffs.df, file = 'data/sexDiffs.RData')
 
@@ -80,17 +86,20 @@ load("data/logRatiosYH.RData")
 load('data/sexDiffs.RData') #object: sexDiffs.df
 
 
+###------------------
+##Calculate how different the observed values were from the simulated
 
+#by z-score
 zscores.ls <- calcNullProp(logRatios.df, metric.ls ,zscore=TRUE)
 
+#by proportion >= obs
 sexDiffsProp.df <- calcNullProp(sexDiffs.df, metric.ls ,zscore=F) 
 
+#by proportion > or 50% = obs
 sexDiffsProp50.df <- calcNullProp50(sexDiffs.df,metric.ls, zscore=F)
 
 
-#these were long bits, so save above output for later
-save(zscores.ls,file='data/zscores.RData')
-
+## Saving and uploading after that long step
 pb_upload("data/zscores.RData",
           name="zscores.RData",
           tag="data.v.1")
@@ -121,13 +130,13 @@ load("data/sexDiffsProp50YH.df")
 
 
 
-
+###------------------
+##Test: proportion of species+sites where m v f difference in 
+##observed network was larger than many of the simulations 
 
 overallTest(zscores.ls,metric.ls,zscore=TRUE)
-#returned: proportion of observations where m vs f differed. 
 #near 0 = few differed significantly, near 1 = many differed significantly
   ## deg = 0.046, str = 0.056, weighted btw: NA, weighted close NA
-
 
 overallTest(sexDiffsProp.df,metric.ls,zscore=F)
   #
@@ -140,14 +149,14 @@ spLevelTest(sexDiffsProp50.df,metric.ls)
 #results: lots of zeros here too
 
 
-#so the above function works (right approach), but the distribution
-#is essentially just around zero. like +/-0.3*10^-16. So the actual
-#calculation is incorrect
+###--------------
+## Generate null distributions and plotting 
 
+#this one averages everything by simulation
 nullDist.df <- genNullDist(logRatios.df,metric.ls,"sim",zscore=F)
 save(nullDist.df,file='data/nullDist.RData')
 
-
+#averages by sp+site+year (how overallTest was run)
 nullDistDiff.df <- genNullDist(sexDiffs.df,metric.ls,zscore=F)
 
 save(nullDistDiff.df,file='data/nullDistDiff.RData')
@@ -169,22 +178,20 @@ pb_download("nullDistDiff.RData",
             dest="data",
             tag="data.v.1")
 
-
 #nullDist.test <- genNullDist(logRattest.df,metric.ls,"sim",zscore=F)
 
+#meanObsZ<-lapply(metric.ls, function(x){
+#  mean(logRatios.df[[1]][,x])
+#})
+#meanObsDiff<-lapply(metric.ls, function(x){
+#  mean(sexDiffs.df[[1]][,x],na.rm=T)
+#})
 
-meanObsZ<-lapply(metric.ls, function(x){
-  mean(logRatios.df[[1]][,x])
-})
-meanObsDiff<-lapply(metric.ls, function(x){
-  mean(sexDiffs.df[[1]][,x],na.rm=T)
-})
+##this plot is right, i think. doesn't show z scores but looks good
+#plot(density(nullDist.df$degree,na.rm = T))
+#abline(v=-0.064)
 
-#this plot is right, i think. doesn't show z scores but looks good
-plot(density(nullDist.df$degree,na.rm = T))
-abline(v=-0.064)
-
-#density plot for degree, absolute differences
+##density plot for degree, absolute differences
 plot(density(nullDistDiff.df$degree,na.rm = T))
 abline(v=0)
 
@@ -201,9 +208,11 @@ abline(v=0)
 #regress amt of difference against absolute specialization? 
   #i.e, are more generalized sp more different b/w males and females?
 
-#plotting: density shaded plot, single line at obs. just like she did on that paper
 
 #for final project: above, density plot, make map w/ lat longs 
+
+
+
 
 
 

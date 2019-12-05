@@ -456,7 +456,7 @@ calcNullProp50 <- function(data, metrics, zscore=TRUE) {
     
     #calculate the proportion of simulations <= observed
     mets <- lapply(metrics, function(z) {
-      #browser()
+      browser()
       if (zscore == TRUE){
         metZ <- scale(sp[,z],center = TRUE, scale = TRUE)
         #metZobs <- ifelse(is.nan(metZ[1]),0,metZ[1]) 
@@ -464,7 +464,7 @@ calcNullProp50 <- function(data, metrics, zscore=TRUE) {
         #getting rid of stuff again. Though this may be fixed when
         #I fix stuff above
       }else{
-        metprop <- sum((sp[,z] < obs[,z]) + (sp[,z] = obs[,z])/2)  / length(sp$species)
+        metprop <- (sum(sp[,z] < obs[,z]) + sum(sp[,z] == obs[,z])/2)  / length(sp$species)
       }
     })
     mets <- data.frame(mets)
@@ -518,11 +518,11 @@ spLevelTest <- function(prop.dist, metrics,zscore=TRUE, tails=1) {
   
   prop.dist$Sp <- gsub( "_.*$", "", prop.dist$SpSiteYr)
   spp <- lapply (unique(prop.dist$Sp),function(x){
+    #browser()
     sp <- filter(prop.dist, prop.dist$Sp == x)
     sp.sig <- overallTest(sp, metrics, zscore=zscore, tails=tails)
     sp.sig$Sp <- x
     return(sp.sig)
-    #browser()
   })
   spp.sig <- do.call(rbind,spp)
   #browser()

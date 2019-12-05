@@ -77,11 +77,6 @@ spec.y$YearSR <- paste(spec.y$Year,
 #### Hedgerow
 ####--------------------------####
 
-#Sys.getenv("GITHUB_PAT")
-#pb_download("specimens-hr.RData",
-#            dest="data/specimens-hr.RData",
-#            tag="data.v.1")
-#may have to do the following on Lauren's computer (Osmia):
 load("data/specimens-hr.RData",verbose=TRUE) 
   #For whatever reason, resulting df is called "dd"
 spec.h<-dd
@@ -91,7 +86,6 @@ spec.h<-dd
 spec.h<-dat.clean(spec.h)
 spec.h$Date<-as.Date.character(spec.h$Date)
 spec.h<-dat.dates(spec.h)
-
 
 
 ## drop non-bee, non-Syrphids
@@ -153,8 +147,8 @@ rand.sexes.ls<-ran.gen(spec.all,999,cores)
 #	select(GenusSpeciesMix,UniqueID)
 
 #build the networks at the sex level using the mixed sexes
-nets.mix<-mclapply(rand.sexes.ls,function(y){
-  breakNetMix(y,'Site','Year','GenusSpeciesMix')
+nets.mix<-mclapply(rand.sexes.ls, function(y){
+  breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
 
 ## confirm that the networks are actually different
@@ -180,23 +174,25 @@ sex.trts.mix<-mclapply(nets.mix.clean,function(x) calcSpec(x), mc.cores = cores)
 
 save(sex.trts.mix,file='data/sex_trts_mixYH.RData')
 
+
+
 #calculate network-level traits (likely similar b/w obs and sim networks, but checking)
 
-netlvl <- mclapply(nets.mix.clean, function(x){
-  #browser()
-  network.lvl <- lapply(names(x), function(y){
-    #browser()
-    nl <- networklevel(x[[y]])
-    #nl <- data.frame(nl)
-    #nl$SiteYr <- y
-    })
-  
-  traits <- data.frame(do.call(rbind, network.lvl))
-  traits$SiteYr <- names(x)
-  return(traits)
-},mc.cores=cores)
+#netlvl <- mclapply(nets.mix.clean, function(x){
+#  #browser()
+#  network.lvl <- lapply(names(x), function(y){
+#    #browser()
+#    nl <- networklevel(x[[y]])
+#    #nl <- data.frame(nl)
+#    #nl$SiteYr <- y
+#    })
+#  
+#  traits <- data.frame(do.call(rbind, network.lvl))
+#  traits$SiteYr <- names(x)
+#  return(traits)
+#},mc.cores=cores)
 
-save(netlvl,file="data/netlvlYH.RData")
+#save(netlvl,file="data/netlvlYH.RData")
 
 
 #Sys.getenv("GITHUB_PAT")
@@ -209,6 +205,7 @@ pb_upload("data/mix_netsYH.RData",
 pb_upload("netlvlYH.RData",
           name="netlvlYH.RData",
           tag="data.v.1")
+
 
 
 ####----------------------------####
@@ -225,24 +222,88 @@ metric.net <- c('connectance',
                 'niche overlap',
                 'functional complementarity')
 
-N = 3
+N = 999
+cores = 10
 
-#all networks, with males and females included separately
+##all networks, with males and females included separately
 nets.obs.sex<-breakNetMix(spec.all,'Site','Year',"GenusSpeciesSex")
 
-stats.sex <- mclapply(nets.obs.sex, 
+netStats.sex <- mclapply(nets.obs.sex, 
                       calcNetworkMetrics, 
                       N=N,
                       index=metric.net,
                       mc.cores=cores)
 
-#all networks, males and females lumped into species
+save(netStats.sex, file = "data/netStats_sex.RData")
+
+pb_upload("data/netStats_sex.RData",
+          name="netStats_sex.RData",
+          tag="data.v.1")
+
+##all networks, males and females lumped into species
 nets.obs.sp <- breakNet(spec.all,'Site','Year')
+netStats.sp <- mclapply(nets.obs.sp, 
+                         calcNetworkMetrics, 
+                         N=N,
+                         index=metric.net,
+                         mc.cores=cores)
 
+save(netStats.sp, file = "data/netStats_sp.RData")
 
-#all networks, males dropped
+pb_upload("data/netStats_sp.RData",
+          name="netStats_sp.RData",
+          tag="data.v.1")
+
+##all networks, males dropped
 spec.all.drop <- filter(spec.all, spec.all$Sex=="f")
 nets.obs.f <- breakNet(spec.all.drop,'Site','Year')
 
+netStats.f <- mclapply(nets.obs.f, 
+                        calcNetworkMetrics, 
+                        N=N,
+                        index=metric.net,
+                        mc.cores=cores)
+
+save(netStats.f, file = "data/netStats_f.RData")
+
+pb_upload("data/netStats_f.RData",
+          name="netStats_f.RData",
+          tag="data.v.1")
 
 
+##Load and merge the 3 stats datasets
+pb_download("netStats_f.RData",
+          dest="data",
+          tag="data.v.1")
+pb_download("netStats_sex.RData",
+            dest="data",
+            tag="data.v.1")
+pb_download("netStats_sp.RData",
+            dest="data",
+            tag="data.v.1")
+
+load("data/netStats_sp.RData")
+load("data/netStats_f.RData")
+load("data/netStats_sex.RData")
+
+
+names(netStats.f)
+
+netStats.all <- do.call(rbind,
+                        lapply(names(netStats.f), 
+                               function (x) {
+                                 
+  all.df <- data.frame(rbind(netStats.sex[x][[1]][1:39],
+                             netStats.sp[x][[1]][1:39],
+                             netStats.f[x][[1]][1:39]))
+  names(all.df) <- names(netStats.sex["Zamora.2014"][[1]])
+  all.df$SiteYr <- x
+  all.df$trt <- c("sex","sp","fem") 
+  
+
+  return(all.df)
+})
+)
+
+ggplot(netStats.all, aes(x=zrobustness.HL, color=trt)) +
+  geom_density()
