@@ -101,12 +101,24 @@ getCon <- function(x, INDEX){
 ## with site status and ypr
 ## takes networks and specimen data
 
-calcSpec <- function(nets, spec){
+calcSpec <- function(nets, spec, indiv = 1){
   ## applies specieslevel from bipartite to networks
   species.lev <- lapply(nets, function(x){
+    
+    #calculate values
     sl <- specieslevel(x)
+    
+    #keep only species with observations >= indiv
+    x <- as.data.frame(x)
+    sums <- lapply(x, sum)
+    cullNames <- names(sums[sums >= indiv])
+
+    sl$`higher level` <- sl$`higher level`[cullNames,]
+    
     return(sl)
   })
+  
+  #sum up under species (rowsums or such)
   
   ## extract the values and make a dataframe
   specs  <-  mapply(function(a, b)
@@ -167,7 +179,6 @@ ran.sex <- function(spec.data){
   col.ls <- lapply(unique(spec.data$SiteYr),function(x){
     net <- filter(spec.data,SiteYr==x)
     sp.mix.col <-lapply(unique(net$GenusSpecies), function(y){
-      #   browser()
       sp<-filter(net,net$GenusSpecies==y)
       if(length(unique(sp$Sex)) != 1){
         sp$MixSex<-sample(sp$Sex,replace=FALSE)
@@ -355,7 +366,6 @@ makeComp <- function(data, metrics, comparison="log") {
             }
             #  }
           })
-          #browser()
           ratios <- data.frame(ratios)
           colnames(ratios) <- metrics
           ratios$species <- z
@@ -365,13 +375,10 @@ makeComp <- function(data, metrics, comparison="log") {
           ratios <- NULL
         }
         return(ratios)
-        #browser()
       })
       spp <- spp[!sapply(spp, is.null)]
       return(do.call(rbind, spp))
-      #browser()
     })
-    #browser()
     return(do.call(rbind, col.ls))
   },mc.cores=cores)
   return(som)
@@ -387,7 +394,6 @@ calcNullProp <- function(data, metrics, zscore=TRUE) {
   #give each element of the long list a unique number
   sim.vec <- seq(1:length(data))
   named.ls <- mclapply(sim.vec, function(x) {
-    #browser()
     data[[x]]$sim <- rep.int(x,times=length(data[[x]]$SiteYr))
     data[[x]]$SpSiteYr <- paste(data[[x]]$species,
                                 data[[x]]$SiteYr,
@@ -400,13 +406,11 @@ calcNullProp <- function(data, metrics, zscore=TRUE) {
   
   #combine values for sp+yr+site
   sigLevel <- mclapply(unique(dist.df$SpSiteYr), function(y) {
-    #browser()
     sp <- filter(dist.df, dist.df$SpSiteYr == y)
     obs <- filter(sp, sp$sim == 1)
     
     #calculate the proportion of simulations <= observed
     mets <- lapply(metrics, function(z) {
-      #browser()
       if (zscore == TRUE){
         metZ <- scale(sp[,z],center = TRUE, scale = TRUE)
         #metZobs <- ifelse(is.nan(metZ[1]),0,metZ[1]) 
@@ -437,7 +441,6 @@ calcNullProp50 <- function(data, metrics, zscore=TRUE) {
   #give each element of the long list a unique number
   sim.vec <- seq(1:length(data))
   named.ls <- mclapply(sim.vec, function(x) {
-    #browser()
     data[[x]]$sim <- rep.int(x,times=length(data[[x]]$SiteYr))
     data[[x]]$SpSiteYr <- paste(data[[x]]$species,
                                 data[[x]]$SiteYr,
@@ -450,13 +453,11 @@ calcNullProp50 <- function(data, metrics, zscore=TRUE) {
   
   #combine values for sp+yr+site
   sigLevel <- mclapply(unique(dist.df$SpSiteYr), function(y) {
-    #browser()
     sp <- filter(dist.df, dist.df$SpSiteYr == y)
     obs <- filter(sp, sp$sim == 1)
     
     #calculate the proportion of simulations <= observed
     mets <- lapply(metrics, function(z) {
-      browser()
       if (zscore == TRUE){
         metZ <- scale(sp[,z],center = TRUE, scale = TRUE)
         #metZobs <- ifelse(is.nan(metZ[1]),0,metZ[1]) 
@@ -486,11 +487,9 @@ overallTest <- function(prop.dist, metrics, tails = 1, zscore = TRUE) {
   ## differed from the observed over 95% of the time. 
   
   alpha <- lapply(metrics, function(x){
-    #browser()
     clean <- !is.na(prop.dist[,x])
     clean.df <- prop.dist[clean,]
     if(tails == 1){
-      #browser()
       if(zscore == TRUE) {
         sum(1.645 <= clean.df[,x]) / length(clean.df[,x])
       } else{
@@ -518,14 +517,12 @@ spLevelTest <- function(prop.dist, metrics,zscore=TRUE, tails=1) {
   
   prop.dist$Sp <- gsub( "_.*$", "", prop.dist$SpSiteYr)
   spp <- lapply (unique(prop.dist$Sp),function(x){
-    #browser()
     sp <- filter(prop.dist, prop.dist$Sp == x)
     sp.sig <- overallTest(sp, metrics, zscore=zscore, tails=tails)
     sp.sig$Sp <- x
     return(sp.sig)
   })
   spp.sig <- do.call(rbind,spp)
-  #browser()
   return(spp.sig)
 }
 
@@ -536,7 +533,6 @@ genNullDist <- function(data, metrics, mean.by="SpSiteYr",zscore=TRUE) {
   #give each element of the long list a unique number
   sim.vec <- seq(1:length(data))
   named.ls <- mclapply(sim.vec, function(x) {
-    #browser()
     data[[x]]$sim <- rep.int(x,times=length(data[[x]]$SiteYr))
     data[[x]]$SpSiteYr <- paste0(data[[x]]$species,data[[x]]$SiteYr)
     return(data[[x]])
@@ -548,13 +544,11 @@ genNullDist <- function(data, metrics, mean.by="SpSiteYr",zscore=TRUE) {
   #extract an average value w/in each [mean.by] (e.g., mean.by="sim" 
   #would calculate a single mean value w/in each simulation across sites
   dist.build <- mclapply(unique(dist.df[,mean.by]), function(y) {
-    #browser()
     net <- filter(dist.df, dist.df[,mean.by] == y)
     obs <- filter(net, net$sim == 1)
     
     #calculate the proportion of simulations <= observed
     mets <- lapply(metrics, function(z) {
-      browser()
       if (zscore == TRUE){
         z.dist <- scale(net[,z],center=T,scale=T)
         mean.Z <- mean(z.dist, na.rm=T)

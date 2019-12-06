@@ -163,8 +163,6 @@ nets.mix.clean<-mclapply(nets.mix, function(x){
 #save the networks themselves
 save(nets.mix.clean, file = 'data/mix_netsYH.RData')
 
-nets.mix.test <- nets.mix.clean[1:3]
-
 #calculate network stats at the individual level, output into usable data frame
 sex.trts.mix<-mclapply(nets.mix.clean,function(x) calcSpec(x), mc.cores = cores)
 

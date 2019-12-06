@@ -63,6 +63,7 @@ logRatios.df <- makeComp(traits.ls, metric.ls, comparison = "log")
 sexDiffs.df <- makeComp(traits.ls, metric.ls, comparison = "diff")
   #males - females
 
+sexDiffs2.df <- makeComp(traits.ls[1:2], metric.ls, comparison = "diff", indivs = 2)
 
 ## Saving and uploading after that long step
 save(logRatios.df, file = 'data/logRatios.RData')
