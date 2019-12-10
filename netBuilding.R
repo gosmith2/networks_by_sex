@@ -166,11 +166,15 @@ save(nets.mix.clean, file = 'data/mix_netsYH.RData')
 #calculate network stats at the individual level, output into usable data frame
 sex.trts.mix<-mclapply(nets.mix.clean,function(x) calcSpec(x), mc.cores = cores)
 
+sex.trts.mix2<-mclapply(nets.mix.clean,function(x) calcSpec(x, indiv = 2), mc.cores = cores)
+
 ## confirm that the values are different
 #sex.trts.mix[[1]] %>%
 #	filter(Site == "Zamora", Year == 2014)
 
 save(sex.trts.mix,file='data/sex_trts_mixYH.RData')
+
+save(sex.trts.mix2,file='data/sex_trts_mixYH2.RData')
 
 
 
@@ -197,6 +201,9 @@ save(sex.trts.mix,file='data/sex_trts_mixYH.RData')
 pb_upload("data/sex_trts_mixYH.RData",
 			name="sex_trts_mixYH.RData",
             tag="data.v.1")
+pb_upload("data/sex_trts_mixYH2.RData",
+          name="sex_trts_mixYH2.RData",
+          tag="data.v.1")
 pb_upload("data/mix_netsYH.RData",
 			name="mix_netsYH.RData",
             tag="data.v.1")
@@ -303,5 +310,21 @@ netStats.all <- do.call(rbind,
 })
 )
 
+ggplot(netStats.all, aes(x=zH2, color=trt)) +
+  geom_density()
+
+ggplot(netStats.all, aes(x=zniche.overlap.HL, color=trt)) +
+  geom_density()
+
 ggplot(netStats.all, aes(x=zrobustness.HL, color=trt)) +
   geom_density()
+
+ggplot(netStats.all, aes(x=zfunctional.complementarity.LL, color=trt)) +
+  geom_density()
+
+ggplot(netStats.all, aes(x=zgenerality.HL, color=trt)) +
+  geom_density()
+
+ggplot(netStats.all, aes(x=zvulnerability.LL, color=trt)) +
+  geom_density()
+

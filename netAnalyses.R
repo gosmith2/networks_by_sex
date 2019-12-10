@@ -43,8 +43,8 @@ metric.ls <- c("degree","species.strength","weighted.betweenness","weighted.clos
 cores <- 10
 
 ##clean up the datasets, add some necessary columns to speed things up
-traits.ls <- 
-  mclapply(sex.trts.mix, function(x){
+traits2.ls <- 
+  mclapply(sex.trts.mix2, function(x){
   x$SiteYr <- paste(x$Site, x$Year, sep="_")
   x$Sp <- gsub( "_.*$", "", x$GenusSpecies )
   x <- filter(x,x$sex == "m" | x$sex == "f")
@@ -63,11 +63,12 @@ logRatios.df <- makeComp(traits.ls, metric.ls, comparison = "log")
 sexDiffs.df <- makeComp(traits.ls, metric.ls, comparison = "diff")
   #males - females
 
-sexDiffs2.df <- makeComp(traits.ls[1:2], metric.ls, comparison = "diff", indivs = 2)
+sexDiffs2.df <- makeComp(traits2.ls, metric.ls, comparison = "diff")
 
 ## Saving and uploading after that long step
 save(logRatios.df, file = 'data/logRatios.RData')
 save(sexDiffs.df, file = 'data/sexDiffs.RData')
+save(sexDiffs2.df, file = 'data/sexDiffs2.RData')
 
 pb_upload("data/logRatios.RData",
           name="logRatios.RData",
@@ -99,6 +100,13 @@ sexDiffsProp.df <- calcNullProp(sexDiffs.df, metric.ls ,zscore=F)
 #by proportion > or 50% = obs
 sexDiffsProp50.df <- calcNullProp50(sexDiffs.df,metric.ls, zscore=F)
 
+sexDiffsProp50_2.df <- calcNullProp50(sexDiffs2.df,metric.ls, zscore=F)
+
+zscore50_2.df <- calcNullProp50(sexDiffs2.df,metric.ls)
+save(zscore50_2.df,file="data/zscore50_2.RData")
+pb_download("zscore50_2.RData",
+            dest="data",
+            tag="data.v.1")
 
 ## Saving and uploading after that long step
 pb_upload("data/zscores.RData",
@@ -107,10 +115,15 @@ pb_upload("data/zscores.RData",
 
 save(sexDiffsProp.df,file='data/sexDiffsPropYH.df')
 save(sexDiffsProp50.df,file='data/sexDiffsProp50YH.df')
+save(sexDiffsProp50_2.df,file='data/sexDiffsProp50YH_2.df')
 
 
 pb_upload("data/sexDiffsProp50YH.df",
           name="sexDiffsProp50YH.df",
+          tag="data.v.1")
+
+pb_upload("data/sexDiffsProp50YH_2.df",
+          name="sexDiffsProp50YH_2.df",
           tag="data.v.1")
 
 pb_download("zscores.RData",
@@ -121,7 +134,7 @@ pb_download("sexDiffsPropYH.df",
             dest="data",
             tag="data.v.1")
 
-pb_download("sexDiffsProp50YH.df",
+pb_download("sexDiffsProp50YH_2.df",
             dest="data",
             tag="data.v.1")
 
@@ -144,21 +157,31 @@ overallTest(sexDiffsProp.df,metric.ls,zscore=F)
 
 #same test as above, but with 50% >=, rather than >=
 overallTest(sexDiffsProp50.df,metric.ls,zscore=F)
+overallTest(sexDiffsProp50_2.df,metric.ls,zscore=F)
+
+overallTest(zscore50_2.df,metric.ls,zscore=T)
+
+spLevelTest(sexDiffsProp50_2.df,metric.ls,zscore=F)
+#results: tons of zeros. 
+
+sexDiffsProp50_2.df %>%
+  mutate(Sp = gsub( "_.*$", "", SpSiteYr))%>%
+  arrange(desc(Sp)) -> sexDiffsProp50_2.df
 
 
-spLevelTest(sexDiffsProp50.df,metric.ls)
-#results: lots of zeros here too
+
 
 
 ###--------------
 ## Generate null distributions and plotting 
 
 #this one averages everything by simulation
-nullDist.df <- genNullDist(logRatios.df,metric.ls,"sim",zscore=F)
+nullDist.df <- genNullDist(sexDiffs2.df,metric.ls,zscore=T)
 save(nullDist.df,file='data/nullDist.RData')
 
 #averages by sp+site+year (how overallTest was run)
 nullDistDiff.df <- genNullDist(sexDiffs.df,metric.ls,zscore=F)
+nullDistDiff2.df <- genNullDist(sexDiffs2.df,metric.ls,zscore=F)
 
 save(nullDistDiff.df,file='data/nullDistDiff.RData')
 
@@ -179,30 +202,19 @@ pb_download("nullDistDiff.RData",
             dest="data",
             tag="data.v.1")
 
-#nullDist.test <- genNullDist(logRattest.df,metric.ls,"sim",zscore=F)
 
-#meanObsZ<-lapply(metric.ls, function(x){
-#  mean(logRatios.df[[1]][,x])
-#})
-#meanObsDiff<-lapply(metric.ls, function(x){
-#  mean(sexDiffs.df[[1]][,x],na.rm=T)
-#})
-
-##this plot is right, i think. doesn't show z scores but looks good
-#plot(density(nullDist.df$degree,na.rm = T))
-#abline(v=-0.064)
 
 ##density plot for degree, absolute differences
-plot(density(nullDistDiff.df$degree,na.rm = T))
+plot(density(nullDist.df$species.strength,na.rm = T))
 abline(v=0)
 
-plot(density(nullDistDiff.df$species.strength,na.rm = T))
+plot(density(nullDistDiff2.df$species.strength,na.rm = T))
 abline(v=0)
 
-plot(density(nullDistDiff.df$weighted.betweenness,na.rm = T))
+plot(density(nullDistDiff2.df$weighted.betweenness,na.rm = T))
 abline(v=0)
 
-plot(density(nullDistDiff.df$weighted.closeness,na.rm = T))
+plot(density(nullDistDiff2.df$weighted.closeness,na.rm = T))
 abline(v=0)
 
 
@@ -210,7 +222,6 @@ abline(v=0)
   #i.e, are more generalized sp more different b/w males and females?
 
 
-#for final project: above, density plot, make map w/ lat longs 
 
 
 

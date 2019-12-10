@@ -551,8 +551,7 @@ genNullDist <- function(data, metrics, mean.by="SpSiteYr",zscore=TRUE) {
     mets <- lapply(metrics, function(z) {
       if (zscore == TRUE){
         z.dist <- scale(net[,z],center=T,scale=T)
-        mean.Z <- mean(z.dist, na.rm=T)
-        exp.obs <- mean.Z - z.dist[1,]
+        exp.obs <- z.dist[1,]
       }else{
         mean.value <- mean(net[,z],na.rm=T)
         exp.obs <- mean.value - obs[,z]
