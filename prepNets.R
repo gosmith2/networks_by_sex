@@ -459,7 +459,8 @@ calcNullProp50 <- function(data, metrics, zscore=TRUE) {
     #calculate the proportion of simulations <= observed
     mets <- lapply(metrics, function(z) {
       if (zscore == TRUE){
-        metZ <- scale(sp[,z],center = TRUE, scale = TRUE)
+        metZ <- (sp[1,z] - mean(sp[,z]))/
+                 (sd(sp[,z])+10^-10)
         #metZobs <- ifelse(is.nan(metZ[1]),0,metZ[1]) 
         #gotta think about NA treatment here too. I kinda think its
         #getting rid of stuff again. Though this may be fixed when
@@ -468,7 +469,7 @@ calcNullProp50 <- function(data, metrics, zscore=TRUE) {
         metprop <- (sum(sp[,z] < obs[,z]) + sum(sp[,z] == obs[,z])/2)  / length(sp$species)
       }
     })
-    mets <- data.frame(mets)
+    mets <- data.frame(t(unlist(mets)))
     colnames(mets) <- metrics
     mets$SpSiteYr <- y
     return(mets)

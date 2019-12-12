@@ -102,7 +102,14 @@ sexDiffsProp50.df <- calcNullProp50(sexDiffs.df,metric.ls, zscore=F)
 
 sexDiffsProp50_2.df <- calcNullProp50(sexDiffs2.df,metric.ls, zscore=F)
 
+
+
+
 zscore50_2.df <- calcNullProp50(sexDiffs2.df,metric.ls)
+
+
+
+
 save(zscore50_2.df,file="data/zscore50_2.RData")
 pb_download("zscore50_2.RData",
             dest="data",
@@ -122,11 +129,11 @@ pb_upload("data/sexDiffsProp50YH.df",
           name="sexDiffsProp50YH.df",
           tag="data.v.1")
 
-pb_upload("data/sexDiffsProp50YH_2.df",
-          name="sexDiffsProp50YH_2.df",
+pb_upload("data/zscore50_2.RData",
+          name="zscore50_2.RData",
           tag="data.v.1")
 
-pb_download("zscores.RData",
+pb_download("zscore50_2.RData",
             dest="data",
             tag="data.v.1")
 
@@ -161,8 +168,11 @@ overallTest(sexDiffsProp50_2.df,metric.ls,zscore=F)
 
 overallTest(zscore50_2.df,metric.ls,zscore=T)
 
-spLevelTest(sexDiffsProp50_2.df,metric.ls,zscore=F)
-#results: tons of zeros. 
+overallTest(zscore50_2.df,metric.ls,zscore=T,tails=2)
+
+
+spLevelTest(zscore50_2.df,metric.ls,zscore=T)
+#results: tons of zeros, species seem to fluctuate around 0.05
 
 sexDiffsProp50_2.df %>%
   mutate(Sp = gsub( "_.*$", "", SpSiteYr))%>%
@@ -205,7 +215,7 @@ pb_download("nullDistDiff.RData",
 
 
 ##density plot for degree, absolute differences
-plot(density(nullDist.df$species.strength,na.rm = T))
+plot(density(nullDistDiff2.df$degree,na.rm = T))
 abline(v=0)
 
 plot(density(nullDistDiff2.df$species.strength,na.rm = T))

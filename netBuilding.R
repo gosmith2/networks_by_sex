@@ -319,10 +319,10 @@ ggplot(netStats.all, aes(x=zniche.overlap.HL, color=trt)) +
 ggplot(netStats.all, aes(x=zrobustness.HL, color=trt)) +
   geom_density()
 
-ggplot(netStats.all, aes(x=zfunctional.complementarity.LL, color=trt)) +
+ggplot(netStats.all, aes(x=functional.complementarity.LL, color=trt)) +
   geom_density()
 
-ggplot(netStats.all, aes(x=zgenerality.HL, color=trt)) +
+ggplot(netStats.all, aes(x=generality.HL, color=trt)) +
   geom_density()
 
 ggplot(netStats.all, aes(x=zvulnerability.LL, color=trt)) +
