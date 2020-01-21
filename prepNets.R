@@ -535,7 +535,7 @@ genNullDist <- function(data, metrics, mean.by="SpSiteYr",zscore=TRUE) {
   sim.vec <- seq(1:length(data))
   named.ls <- mclapply(sim.vec, function(x) {
     data[[x]]$sim <- rep.int(x,times=length(data[[x]]$SiteYr))
-    data[[x]]$SpSiteYr <- paste0(data[[x]]$species,data[[x]]$SiteYr)
+    data[[x]]$SpSiteYr <- paste(data[[x]]$species,data[[x]]$SiteYr,sep="_")
     return(data[[x]])
   },mc.cores=cores)
   
