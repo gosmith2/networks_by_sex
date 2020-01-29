@@ -1,12 +1,14 @@
-## Network (matrix) building from individual interactions. 
+## Network (matrix) building from individual interactions.
 ## Modified (very slightly) from Ponisio sky islands data prep.
 
 
-##this should be run on lauren's computer via terminal (git bash): 
-#ssh gsmith@osmia.dyn.ucr.edu 
+##this should be run on lauren's computer via terminal (git bash):
+#ssh gsmith@osmia.dyn.ucr.edu
 #cd Documents
 #git clone https://github.com/gosmith2/networks_by_sex.git
 #cd Documents/networks_by_sex
+
+## setwd("~/Dropbox/networks_by_sex")
 
 rm(list=ls())
 library(piggyback)
@@ -18,17 +20,17 @@ library(bipartite)
 library(tidyverse)
 library(stringr)
 library(nlme)
-library(sciplot)
 library(parallel)
 library(SYNCSA)
 
-source('misc.R')
 source('prepNets.R')
+source('misc.R')
 
 #Sys.getenv("GITHUB_PAT")
 pb_download("specimens-yos.csv",
             dest="data",
             tag="data.v.1")
+
 pb_download("specimens-hr.RData",
             dest="data",
             tag="data.v.1")
@@ -48,12 +50,9 @@ spec.y <- spec.y[spec.y$NetPan == "net",]
 extra.round <- spec.y$Site == 'L21' & spec.y$Date == '2014-07-01'
 spec.y <- spec.y[!extra.round,]
 
-
-
 ## get specimen data ready.
-spec.y<-dat.clean(spec.y)
-spec.y<-dat.dates(spec.y)
-
+spec.y <- dat.clean(spec.y)
+spec.y <- dat.dates(spec.y)
 
 ## drop non-bee, non-Syrphids
 spec.y <- spec.y[spec.y$Family %in% c("Andrenidae", "Apidae",
@@ -61,15 +60,15 @@ spec.y <- spec.y[spec.y$Family %in% c("Andrenidae", "Apidae",
                                  "Megachilidae", "Syrphidae"),]
 
 ## for networks, drop specimens without plant IDs (or bee IDs)
-spec.y<-dat.rm.blanks(spec.y)
+spec.y <- dat.rm.blanks(spec.y)
 spec.y$GenusSpeciesSex<-ifelse(spec.y$Sex %in% c("m","f"),
                                paste(spec.y$GenusSpecies,
                                      spec.y$Sex,sep="_"),
                                paste(spec.y$GenusSpecies,
                                      "e",sep="_")
 )
-spec.y$YearSR <- paste(spec.y$Year, 
-                       spec.y$SampleRound, 
+spec.y$YearSR <- paste(spec.y$Year,
+                       spec.y$SampleRound,
                        sep=".")
 
 
@@ -77,15 +76,15 @@ spec.y$YearSR <- paste(spec.y$Year,
 #### Hedgerow
 ####--------------------------####
 
-load("data/specimens-hr.RData",verbose=TRUE) 
+load("data/specimens-hr.RData",verbose=TRUE)
   #For whatever reason, resulting df is called "dd"
-spec.h<-dd
+spec.h <- dd
 
 
 ## get specimen data ready.
-spec.h<-dat.clean(spec.h)
-spec.h$Date<-as.Date.character(spec.h$Date)
-spec.h<-dat.dates(spec.h)
+spec.h <- dat.clean(spec.h)
+spec.h$Date <- as.Date.character(spec.h$Date)
+spec.h <- dat.dates(spec.h)
 
 
 ## drop non-bee, non-Syrphids
@@ -94,9 +93,9 @@ spec.h <- spec.h[spec.h$Family %in% c("Andrenidae", "Apidae",
                                       "Megachilidae", "Syrphidae"),]
 
 ## for networks, drop specimens without plant IDs (or bee IDs)
-spec.h<-dat.rm.blanks(spec.h)
+spec.h <- dat.rm.blanks(spec.h)
 
-spec.h$GenusSpeciesSex<-ifelse(spec.h$Sex %in% c("m","f"),
+spec.h$GenusSpeciesSex <- ifelse(spec.h$Sex %in% c("m","f"),
                                paste(spec.h$GenusSpecies,
                                      spec.h$Sex,sep="_"),
                                paste(spec.h$GenusSpecies,
@@ -104,7 +103,7 @@ spec.h$GenusSpeciesSex<-ifelse(spec.h$Sex %in% c("m","f"),
 )
 
 spec.h$YearSR <- paste(spec.h$Year,
-                       spec.h$SampleRound, 
+                       spec.h$SampleRound,
                        sep=".")
 
 
@@ -113,7 +112,7 @@ spec.h$YearSR <- paste(spec.h$Year,
 #### Combining network lists
 ####--------------------------####
 
-keeps<-c("UniqueID",
+keeps <- c("UniqueID",
           "GenusSpecies",
           "Site",
           "Year",
@@ -123,11 +122,9 @@ keeps<-c("UniqueID",
           "Sex")
 
 bind_rows(select(spec.y,keeps),
-          select(spec.h,keeps))->
-  spec.all
+          select(spec.h,keeps)) -> spec.all
 
-spec.all$SiteYr<-paste(spec.all$Site,spec.all$Year)
-
+spec.all$SiteYr <- paste(spec.all$Site,spec.all$Year)
 
 
 ####-------------------------------------------####
@@ -135,19 +132,22 @@ spec.all$SiteYr<-paste(spec.all$Site,spec.all$Year)
 ####-------------------------------------------####
 
 
-#cores should be 3 for bombus, 10 for osmia
+## cores should be 3 for bombus, 10 for osmia
 cores <- 10
 
-#randomize the sexes w/in species w/in sites. observed network is element 1
-rand.sexes.ls<-ran.gen(spec.all,999,cores)
+## randomize the sexes w/in species w/in sites. observed network is
+## element 1
+
+rand.sexes.ls <- ran.gen(spec.all, 999, cores)
 
 ## checking that they mixed
-#rand.sexes.ls[[1]] %>%
-#	filter(SiteYr=='Zamora 2014') %>%
-#	select(GenusSpeciesMix,UniqueID)
+## rand.sexes.ls[[1]] %>%
+## 	filter(SiteYr=='Zamora 2014') %>%
+##     select(GenusSpeciesMix,UniqueID)
+
 
 #build the networks at the sex level using the mixed sexes
-nets.mix<-mclapply(rand.sexes.ls, function(y){
+nets.mix <- mclapply(rand.sexes.ls, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
 
@@ -156,17 +156,21 @@ nets.mix<-mclapply(rand.sexes.ls, function(y){
 #nets.mix[[2]]$Zamora.2014
 
 #remove all networks with too few interactions to calculate metrics
-nets.mix.clean<-mclapply(nets.mix, function(x){
-  x[sapply(x,function(y) all(dim(y)>1))]
+nets.mix.clean <- mclapply(nets.mix, function(x){
+  x[sapply(x, function(y) all(dim(y) > 1))]
 }, mc.cores=cores)
 
 #save the networks themselves
 save(nets.mix.clean, file = 'data/mix_netsYH.RData')
 
 #calculate network stats at the individual level, output into usable data frame
-sex.trts.mix<-mclapply(nets.mix.clean,function(x) calcSpec(x), mc.cores = cores)
+sex.trts.mix <- mclapply(nets.mix.clean,
+                         function(x) calcSpec(x),
+                         mc.cores = cores)
 
-sex.trts.mix2<-mclapply(nets.mix.clean,function(x) calcSpec(x, indiv = 2), mc.cores = cores)
+sex.trts.mix2 <- mclapply(nets.mix.clean,
+                          function(x) calcSpec(x, indiv = 2),
+                          mc.cores = cores)
 
 ## confirm that the values are different
 #sex.trts.mix[[1]] %>%
@@ -175,26 +179,6 @@ sex.trts.mix2<-mclapply(nets.mix.clean,function(x) calcSpec(x, indiv = 2), mc.co
 save(sex.trts.mix,file='data/sex_trts_mixYH.RData')
 
 save(sex.trts.mix2,file='data/sex_trts_mixYH2.RData')
-
-
-
-#calculate network-level traits (likely similar b/w obs and sim networks, but checking)
-
-#netlvl <- mclapply(nets.mix.clean, function(x){
-#  #browser()
-#  network.lvl <- lapply(names(x), function(y){
-#    #browser()
-#    nl <- networklevel(x[[y]])
-#    #nl <- data.frame(nl)
-#    #nl$SiteYr <- y
-#    })
-#  
-#  traits <- data.frame(do.call(rbind, network.lvl))
-#  traits$SiteYr <- names(x)
-#  return(traits)
-#},mc.cores=cores)
-
-#save(netlvl,file="data/netlvlYH.RData")
 
 
 #Sys.getenv("GITHUB_PAT")
@@ -217,7 +201,7 @@ pb_upload("netlvlYH.RData",
 #### Prep for networklevel analyses
 ####----------------------------####
 
-metric.net <- c('connectance', 
+metric.net <- c('connectance',
                 'number of compartments',
                 'nestedness',
                 'NODF',
@@ -233,8 +217,8 @@ cores = 10
 ##all networks, with males and females included separately
 nets.obs.sex<-breakNetMix(spec.all,'Site','Year',"GenusSpeciesSex")
 
-netStats.sex <- mclapply(nets.obs.sex, 
-                      calcNetworkMetrics, 
+netStats.sex <- mclapply(nets.obs.sex,
+                      calcNetworkMetrics,
                       N=N,
                       index=metric.net,
                       mc.cores=cores)
@@ -247,8 +231,8 @@ pb_upload("data/netStats_sex.RData",
 
 ##all networks, males and females lumped into species
 nets.obs.sp <- breakNet(spec.all,'Site','Year')
-netStats.sp <- mclapply(nets.obs.sp, 
-                         calcNetworkMetrics, 
+netStats.sp <- mclapply(nets.obs.sp,
+                         calcNetworkMetrics,
                          N=N,
                          index=metric.net,
                          mc.cores=cores)
@@ -263,8 +247,8 @@ pb_upload("data/netStats_sp.RData",
 spec.all.drop <- filter(spec.all, spec.all$Sex=="f")
 nets.obs.f <- breakNet(spec.all.drop,'Site','Year')
 
-netStats.f <- mclapply(nets.obs.f, 
-                        calcNetworkMetrics, 
+netStats.f <- mclapply(nets.obs.f,
+                        calcNetworkMetrics,
                         N=N,
                         index=metric.net,
                         mc.cores=cores)
@@ -295,16 +279,16 @@ load("data/netStats_sex.RData")
 names(netStats.f)
 
 netStats.all <- do.call(rbind,
-                        lapply(names(netStats.f), 
+                        lapply(names(netStats.f),
                                function (x) {
-                                 
+
   all.df <- data.frame(rbind(netStats.sex[x][[1]][1:39],
                              netStats.sp[x][[1]][1:39],
                              netStats.f[x][[1]][1:39]))
   names(all.df) <- names(netStats.sex["Zamora.2014"][[1]])
   all.df$SiteYr <- x
-  all.df$trt <- c("sex","sp","fem") 
-  
+  all.df$trt <- c("sex","sp","fem")
+
 
   return(all.df)
 })
