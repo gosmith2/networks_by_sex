@@ -11,13 +11,13 @@
 ## setwd("~/Dropbox/networks_by_sex")
 
 rm(list=ls())
-library(piggyback)
+library(piggyback) #
 library(igraph)
 library(vegan)
 library(fields)
 library(fossil)
 library(bipartite)
-library(tidyverse)
+library(tidyverse) #
 library(stringr)
 library(nlme)
 library(parallel)
@@ -35,6 +35,9 @@ pb_download("specimens-hr.RData",
             dest="data",
             tag="data.v.1")
 
+pb_download("specimens-si.RData",
+            dest="data",
+            tag="data.v.1")
 
 ####--------------------------####
 #### YOSEMITE
@@ -67,9 +70,7 @@ spec.y$GenusSpeciesSex<-ifelse(spec.y$Sex %in% c("m","f"),
                                paste(spec.y$GenusSpecies,
                                      "e",sep="_")
 )
-spec.y$YearSR <- paste(spec.y$Year,
-                       spec.y$SampleRound,
-                       sep=".")
+
 
 
 ####--------------------------####
@@ -102,11 +103,25 @@ spec.h$GenusSpeciesSex <- ifelse(spec.h$Sex %in% c("m","f"),
                                      "e",sep="_")
 )
 
-spec.h$YearSR <- paste(spec.h$Year,
-                       spec.h$SampleRound,
-                       sep=".")
+####--------------------------####
+#### Sky Islands
+####--------------------------####
 
+load("data/specimens-si.RData",verbose=TRUE)
 
+spec.s <- spec
+
+spec.h <- spec.h[spec.h$Family %in% c("Andrenidae", "Apidae",
+                                      "Colletidae", "Halictidae",
+                                      "Megachilidae", "Syrphidae"),]
+spec.s <- dat.rm.blanks(spec.s)
+
+spec.s$GenusSpeciesSex <- ifelse(spec.s$Sex %in% c("m","f"),
+                                 paste(spec.s$GenusSpecies,
+                                       spec.s$Sex,sep="_"),
+                                 paste(spec.s$GenusSpecies,
+                                       "e",sep="_")
+)
 
 ####--------------------------####
 #### Combining network lists
@@ -117,12 +132,12 @@ keeps <- c("UniqueID",
           "Site",
           "Year",
           "PlantGenusSpecies",
-          "GenusSpecies",
           "GenusSpeciesSex",
           "Sex")
 
 bind_rows(select(spec.y,keeps),
-          select(spec.h,keeps)) -> spec.all
+          select(spec.h,keeps),
+          select(spec.s,keeps)) -> spec.all
 
 spec.all$SiteYr <- paste(spec.all$Site,spec.all$Year)
 
