@@ -1,3 +1,6 @@
+## Functions used during analyses of the Network by Sex project
+
+
 ## the purpose of this function is to break up data with many
 ## sites/years and prepare it for network analysis.
 
@@ -216,6 +219,23 @@ ran.gen<-function(spec.data,iterations,cores){
     return(spec.keeps)
   }, mc.cores = cores)
   destList<-c(destList,randoms)
+  
+  #check that the sexes actually mixed
+  ifelse((destList[[1]] %>%
+            filter(SiteYr=='Zamora 2014',
+                   GenusSpecies=="Halictus tripartitus",
+                   Sex=="m") %>%
+            select(GenusSpeciesMix))
+         ==
+           (destList[[2]] %>%
+              filter(SiteYr=='Zamora 2014',
+                     GenusSpecies=="Halictus tripartitus",
+                     Sex=="m") %>%
+              select(GenusSpeciesMix)),
+         print("WARNING: the sexes did not mix correctly"),
+         print("SUCCESS: the sexes mixed correctly")
+  )
+  
   return(destList)
 }
 

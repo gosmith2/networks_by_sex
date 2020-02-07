@@ -1,0 +1,83 @@
+#Runs analyses on the species-level network parameters calculated in
+#netBuilding.R
+
+################################################
+
+#Species level network traits
+
+################################################
+
+###------------------
+## Setup
+pb_download("sex_trts_mixYHS2.RData",
+            dest="data",
+            tag="data.v.1")
+pb_download("mix_netsYHS.RData",
+            dest="data",
+            tag="data.v.1")
+
+load("data/sex_trts_mixYH2.RData")
+load("data/mix_netsYH.RData") #object: nets.mix.clean
+
+#specify the metrics I'll be looking at, number of cores to use
+metric.ls <- c("degree","species.strength","weighted.betweenness",
+               "weighted.closeness","d")
+
+cores <- 10
+
+##clean up the datasets, add some necessary columns to speed things up
+traits2.ls <-
+  mclapply(sex.trts.mix2, function(x){
+  x$SiteYr <- paste(x$Site, x$Year, sep="_")
+  x$Sp <- gsub( "_.*$", "", x$GenusSpecies )
+  x <- filter(x,x$sex == "m" | x$sex == "f")
+  droplevels(x$sex) #doesn't seem to work for whatever reason...
+  return(x)
+},mc.cores=cores)
+
+
+###------------------
+##calculate how different males and females within each species
+##within each SiteYr are in each iteration
+
+sexDiffs2.df <- makeComp(traits2.ls, metric.ls, comparison = "diff")
+
+#17/196 networks are from SI, rest from HR. NONE from Yos
+#
+
+## Saving and uploading after that long step
+save(sexDiffs2.df, file = 'data/sexDiffs2.RData')
+
+pb_upload('data/sexDiffs2.RData',
+          name='sexDiffs2.RData',
+          tag="data.v.1")
+
+pb_download("sexDiffs2.RData",
+            dest="data",
+            tag="data.v.1")
+
+load('data/sexDiffs2.RData')
+
+###------------------
+##Calculate how different the observed values were from the simulated
+
+sexDiffsProp50_2.df <- calcNullProp50(sexDiffs2.df,
+                                      metric.ls,
+                                      zscore=F)
+
+zscore50_2.df <- calcNullProp50(sexDiffs2.df, metric.ls)
+
+save(zscore50_2.df,file="data/zscore50_2.RData")
+
+save(sexDiffsProp50_2.df,file='data/sexDiffsProp50YH_2.Rdata')
+
+pb_upload("data/zscore50_2.RData",
+          name="zscore50_2.RData",
+          tag="data.v.1")
+
+pb_upload("data/sexDiffsProp50YH_2.Rdata",
+          name="sexDiffsProp50YH_2.Rdata",
+          tag="data.v.1")
+
+
+
