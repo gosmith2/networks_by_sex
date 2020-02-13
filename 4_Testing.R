@@ -18,16 +18,19 @@ load("data/sexDiffsProp50YH_2.Rdata")
 ##Test: proportion of species+sites where m v f difference in
 ##observed network was larger than many of the simulations
 
-#same test as above, but with 50% >=, rather than >=
-
 overallTest(sexDiffsProp50_2.df, metric.ls, zscore=F)
 
 overallTest(zscore50_2.df, metric.ls, zscore=T)
 
 overallTest(zscore50_2.df, metric.ls, zscore=T, tails=2)
 
+#splevel
 spLevelTest(zscore50_2.df,metric.ls,zscore=T)
-#results: tons of zeros, species seem to fluctuate around 0.05
+#results: tons of zeros
+
+#familylevel
+spLevelTest(zscore50_2.df,metric.ls,zscore=T,level="Family")
+
 
 sexDiffsProp50_2.df %>%
   mutate(Sp = gsub( "_.*$", "", SpSiteYr))%>%
@@ -53,7 +56,7 @@ abline(v=0)
 plot(density(zscore50_2.df$degree, na.rm = T))
 abline(v=0)
 
-plot(density(zscore50_2.df$degree, na.rm = T))
+plot(density(zscore50_2.df$weighted.closeness, na.rm = T))
 abline(v=0)
 #regress amt of difference against absolute specialization?
 #i.e, are more generalized sp more different b/w males and females?
@@ -69,20 +72,14 @@ load("data/zscore50_2.RData")
 polltraitsSF.df<-read.csv("data/polltraitsSF.csv")
 polltraitsY.df<-read.csv("data/polltraitsY.csv")
 
-zscore50_2.df %>%
+zscore50_2SI.df %>%
   mutate(GenusSpecies = gsub( "_.*$", "", SpSiteYr)) ->
-  zscore50_2.df
+  zscore50_2SI.df
 
-#sp.ls <- unique(zscore50_2.df$Sp)
-
-#polltraits<-bind_rows(polltraitsY.df[c("GenusSpecies","Lecty")],
-#          polltraitsSF.df[c("GenusSpecies","Lecty")])
-
-#zscore_traits.df <- inner_join(zscore50_2.df, polltraits, by="GenusSpecies")
 zscore_traits.df <- inner_join(zscore50_2.df, polltraitsSF.df, by="GenusSpecies")
 
 #Lecty models
-lectyDeg<-lme(degree~Lecty,data=zscore_traits.df,
+lectyDeg<-lme(degree.x~Lecty,data=zscore_traitsSI.df,
               random=~1|GenusSpecies,na.action=na.omit)
 summary(lectyDeg)
 
@@ -169,3 +166,28 @@ summary(dBtw)
 dClo<-lme(weighted.closeness~d,data=zscore_traits.df,
           random=~1|GenusSpecies,na.action=na.omit)
 summary(dClo)
+
+
+
+##
+#----------Roswell paper notes
+
+#generally, a lot more sampling, I think. like, all day
+  #for 3 days
+
+#Do males and females overlap in diet?
+  #9999 iterations: this many reqed to stabilize for 0.05 alpha
+    #based on North, Curtis, and Sham 2002
+  #)"When the observed dissimilarity was greater than 9500
+    #ofthe 9999 simulated dissimilarities, we concluded that
+    #we had detected a difference in the pattern of floral
+    #visitation between conspecific male and female bees, 
+    #given the observed diet breadth and abundance of each sex.
+  #dissimilarity calculated using: Morisita-Horn index
+    #good for mixed-size and small sample data
+  #comparison at the SPECIES level, across all sites and 
+    #sample rounds (several w/in 2016)
+
+
+
+

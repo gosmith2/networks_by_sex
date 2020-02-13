@@ -60,7 +60,7 @@ spec.y$GenusSpeciesSex<-ifelse(spec.y$Sex %in% c("m","f"),
                                paste(spec.y$GenusSpecies,
                                      "e",sep="_")
 )
-
+spec.y$SiteYr <- paste(spec.y$Site,spec.y$Year)
 
 
 ####--------------------------####
@@ -92,6 +92,7 @@ spec.h$GenusSpeciesSex <- ifelse(spec.h$Sex %in% c("m","f"),
                                  paste(spec.h$GenusSpecies,
                                        "e",sep="_")
 )
+spec.h$SiteYr <- paste(spec.h$Site,spec.h$Year)
 
 ####--------------------------####
 #### Sky Islands
@@ -101,7 +102,7 @@ load("data/specimens-si.RData",verbose=TRUE)
 
 spec.s <- spec
 
-spec.h <- spec.h[spec.h$Family %in% c("Andrenidae", "Apidae",
+spec.s <- spec.s[spec.s$Family %in% c("Andrenidae", "Apidae",
                                       "Colletidae", "Halictidae",
                                       "Megachilidae", "Syrphidae"),]
 spec.s <- dat.rm.blanks(spec.s)
@@ -112,6 +113,8 @@ spec.s$GenusSpeciesSex <- ifelse(spec.s$Sex %in% c("m","f"),
                                  paste(spec.s$GenusSpecies,
                                        "e",sep="_")
 )
+spec.s$SiteYr <- paste(spec.s$Site,spec.s$Year)
+
 
 ####--------------------------####
 #### Combining network lists
@@ -123,13 +126,17 @@ keeps <- c("UniqueID",
            "Year",
            "PlantGenusSpecies",
            "GenusSpeciesSex",
-           "Sex")
+           "Sex",
+           "SiteYr",
+           "Family")
 
+#all sites
 bind_rows(select(spec.y,keeps),
           select(spec.h,keeps),
           select(spec.s,keeps)) -> spec.all
 
-spec.all$SiteYr <- paste(spec.all$Site,spec.all$Year)
+#SI only
+spec.SI<-select(spec.s,keeps)
 
 #save compiled dataset, upload to release
 save(spec.all,file='data/spec.all.RData')

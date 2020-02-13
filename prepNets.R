@@ -360,7 +360,7 @@ vaznull.fast <- function(web) {
 
 makeComp <- function(data, metrics, comparison="log") {
   ## takes the sex-level network traits of the pollinators and calculates
-  ## the log ratio between males and females within each species and 
+  ## the log ratio (or difference) between males and females within each species and 
   ## network. Within each network, it also drops any species where only
   ## one sex was caught.
   
@@ -404,54 +404,6 @@ makeComp <- function(data, metrics, comparison="log") {
   return(som)
 }
 
-
-calcNullProp <- function(data, metrics, zscore=TRUE) {
-  ## calculates the zscore of the observed difference between male and
-  ## female pollinators of each species within the larger distribution
-  ## of that difference across all iterations. Can alternatively give
-  ## the proportion of iterations greater than the observed value
-  
-  #give each element of the long list a unique number
-  sim.vec <- seq(1:length(data))
-  named.ls <- mclapply(sim.vec, function(x) {
-    data[[x]]$sim <- rep.int(x,times=length(data[[x]]$SiteYr))
-    data[[x]]$SpSiteYr <- paste(data[[x]]$species,
-                                data[[x]]$SiteYr,
-                                sep="_")
-    return(data[[x]])
-  },mc.cores=cores)
-  
-  #combine all the simulation iterations together into single element
-  dist.df <- do.call(rbind, named.ls)
-  
-  #combine values for sp+yr+site
-  sigLevel <- mclapply(unique(dist.df$SpSiteYr), function(y) {
-    sp <- filter(dist.df, dist.df$SpSiteYr == y)
-    obs <- filter(sp, sp$sim == 1)
-    
-    #calculate the proportion of simulations <= observed
-    mets <- lapply(metrics, function(z) {
-      if (zscore == TRUE){
-        metZ <- scale(sp[,z],center = TRUE, scale = TRUE)
-        #metZobs <- ifelse(is.nan(metZ[1]),0,metZ[1]) 
-        #gotta think about NA treatment here too. I kinda think its
-        #getting rid of stuff again. Though this may be fixed when
-        #I fix stuff above
-      }else{
-        metprop <- sum(sp[,z] <= obs[,z]) / length(sp$species)
-      }
-    })
-    mets <- data.frame(mets)
-    colnames(mets) <- metrics
-    mets$SpSiteYr <- y
-    return(mets)
-  },mc.cores=cores)
-  
-  #bind these all together
-  sig.dist <- do.call(rbind,sigLevel)
-  return(sig.dist)
-}
-
 calcNullProp50 <- function(data, metrics, zscore=TRUE) {
   ## calculates the zscore of the observed difference between male and
   ## female pollinators of each species within the larger distribution
@@ -476,15 +428,12 @@ calcNullProp50 <- function(data, metrics, zscore=TRUE) {
     sp <- filter(dist.df, dist.df$SpSiteYr == y)
     obs <- filter(sp, sp$sim == 1)
     
-    #calculate the proportion of simulations <= observed
+    #calculate the zscore of the observed difference, 
+    #or proportion of simulations <= observed
     mets <- lapply(metrics, function(z) {
       if (zscore == TRUE){
         metZ <- (sp[1,z] - mean(sp[,z]))/
                  (sd(sp[,z])+10^-10)
-        #metZobs <- ifelse(is.nan(metZ[1]),0,metZ[1]) 
-        #gotta think about NA treatment here too. I kinda think its
-        #getting rid of stuff again. Though this may be fixed when
-        #I fix stuff above
       }else{
         metprop <- (sum(sp[,z] < obs[,z]) + sum(sp[,z] == obs[,z])/2)  / length(sp$species)
       }
@@ -508,19 +457,20 @@ overallTest <- function(prop.dist, metrics, tails = 1, zscore = TRUE) {
   ## differed from the observed over 95% of the time. 
   
   alpha <- lapply(metrics, function(x){
+    print(x)
     clean <- !is.na(prop.dist[,x])
     clean.df <- prop.dist[clean,]
     if(tails == 1){
       if(zscore == TRUE) {
-        sum(1.645 <= clean.df[,x]) / length(clean.df[,x])
+        y <- sum(1.645 <= clean.df[,x]) / length(clean.df[,x])
       } else{
-        sum(0.05 >= clean.df[,x]) / length(clean.df[,x])
+        y <- sum(0.05 >= clean.df[,x]) / length(clean.df[,x])
       }
     } else {
       if(zscore == TRUE) {
-        sum(1.96<=clean.df[,x] | -1.96>=clean.df[,x]) / length(clean.df[,x])
+        y <- sum(1.96<=clean.df[,x] | -1.96>=clean.df[,x]) / length(clean.df[,x])
       } else{
-        sum(0.025>=clean.df[,x] | 0.975<=clean.df) / length(clean.df[,x])
+        y <- sum(0.025>=clean.df[,x] | 0.975<=clean.df) / length(clean.df[,x])
       }
     }
   })
@@ -529,25 +479,31 @@ overallTest <- function(prop.dist, metrics, tails = 1, zscore = TRUE) {
   return(alpha)
 }
 
-spLevelTest <- function(prop.dist, metrics,zscore=TRUE, tails=1) {
+spLevelTest <- function(prop.dist, metrics,zscore=TRUE, tails=1,level="GenusSpecies") {
   ## calculates the proportion of z scores above a threshold based
   ## on tails (5% for 1 tail, 2.5% each direction for 2) for each
   ## species in the dataset separately. Can alternatively give the 
   ## proportion of sp+site+yr observations whose iterations
   ## differed from the observed over 95% of the time
-  
-  prop.dist$Sp <- gsub( "_.*$", "", prop.dist$SpSiteYr)
-  spp <- lapply (unique(prop.dist$Sp),function(x){
-    sp <- filter(prop.dist, prop.dist$Sp == x)
+  spp <- lapply (unique(prop.dist[,level]),function(x){
+    sp <- filter(prop.dist, prop.dist[,level] == x)
     sp.sig <- overallTest(sp, metrics, zscore=zscore, tails=tails)
-    sp.sig$Sp <- x
+    sp.sig$level <- x
     return(sp.sig)
   })
   spp.sig <- do.call(rbind,spp)
   return(spp.sig)
 }
 
-
+prop.dist$Sp <- gsub( "_.*$", "", prop.dist$SpSiteYr)
+spp <- lapply (unique(prop.dist$Sp),function(x){
+  sp <- filter(prop.dist, prop.dist$Sp == x)
+  sp.sig <- overallTest(sp, metrics, zscore=zscore, tails=tails)
+  sp.sig$Sp <- x
+  return(sp.sig)
+})
+spp.sig <- do.call(rbind,spp)
+return(spp.sig)
 
 genNullDist <- function(data, metrics, mean.by="SpSiteYr",zscore=TRUE) {
   
@@ -588,4 +544,43 @@ genNullDist <- function(data, metrics, mean.by="SpSiteYr",zscore=TRUE) {
   #bind these all together
   sig.dist <- do.call(rbind,dist.build)
   return(sig.dist)
+}
+
+distComp <- function(dataset, compMethod) {
+  sim.vec <- seq(1:length(dataset))
+  simDistance <- mclapply(sim.vec, function(x) {
+    sim <- dataset[[x]]
+    net.vec <- seq(1:length(sim))
+    netDist <- lapply(net.vec, function(y) {
+      net <- sim[y]
+      nodeList <- colnames(net[[1]])
+      nodeListClean <- unlist(lapply(nodeList,function(a){
+        if(gsub( "^.*_", "", a) == "m" |gsub( "^.*_", "", a) == "f"){
+          return(a)
+        }
+      }))
+      spList <- gsub( "_.*$", "", nodeListClean)
+      sexList <- unlist(spList[duplicated(spList)])
+      if(length(sexList)==0){
+        netVal <- data.frame(GenusSpecies=NA,distance=NA,SiteYr=names(net))
+        
+      } else {
+        spDist <- lapply(sexList, function(z){
+          
+          comp <- net[[1]][,c(paste0(z,"_m"),paste0(z,"_f"))]
+          dist <- as.matrix(vegdist(t(comp),method=compMethod))
+          data.frame(GenusSpecies=z,distance=dist[2,1])
+        })
+        
+        netVal <- do.call(rbind,spDist)
+        netVal$SiteYr <- rep(names(net))
+        return(netVal)
+      }
+    })
+    simDist <- do.call(rbind, netDist)
+    simDist$sim <- rep(x)
+    return(simDist)
+  },mc.cores=cores)
+  allDist <- do.call(rbind, simDistance)
+  return(allDist)
 }

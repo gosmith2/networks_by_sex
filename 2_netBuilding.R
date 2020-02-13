@@ -78,7 +78,7 @@ ifelse((sex.trts.mix2[[1]] %>%
 )
 	
 
-save(sex.trts.mix2,file='data/sex_trts_mixYHS2.RData')
+save(sex.trts.mix2,file='data/sex_trts_mix2.RData')
 
 
 pb_upload("data/sex_trts_mixYHS2.RData",

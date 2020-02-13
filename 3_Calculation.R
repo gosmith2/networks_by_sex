@@ -16,7 +16,7 @@ pb_download("mix_netsYHS.RData",
             dest="data",
             tag="data.v.1")
 
-load("data/sex_trts_mixYH2.RData")
+load("data/sex_trts_mixYHS2.RData")
 load("data/mix_netsYH.RData") #object: nets.mix.clean
 
 #specify the metrics I'll be looking at, number of cores to use
@@ -43,7 +43,7 @@ traits2.ls <-
 sexDiffs2.df <- makeComp(traits2.ls, metric.ls, comparison = "diff")
 
 #17/196 networks are from SI, rest from HR. NONE from Yos
-#
+
 
 ## Saving and uploading after that long step
 save(sexDiffs2.df, file = 'data/sexDiffs2.RData')
@@ -66,6 +66,14 @@ sexDiffsProp50_2.df <- calcNullProp50(sexDiffs2.df,
                                       zscore=F)
 
 zscore50_2.df <- calcNullProp50(sexDiffs2.df, metric.ls)
+
+zscore50_2.df %>%
+  mutate(GenusSpecies = gsub( "_.*$", "", SpSiteYr)) ->
+  zscore50_2.df
+
+zscore50_2.df$Family <- spec.all$Family[match(zscore50_2.df$GenusSpecies,
+                                              spec.all$GenusSpecies)]
+zscore50_2.df[432,8] <- "Syrphidae"
 
 save(zscore50_2.df,file="data/zscore50_2.RData")
 
