@@ -495,16 +495,6 @@ spLevelTest <- function(prop.dist, metrics,zscore=TRUE, tails=1,level="GenusSpec
   return(spp.sig)
 }
 
-prop.dist$Sp <- gsub( "_.*$", "", prop.dist$SpSiteYr)
-spp <- lapply (unique(prop.dist$Sp),function(x){
-  sp <- filter(prop.dist, prop.dist$Sp == x)
-  sp.sig <- overallTest(sp, metrics, zscore=zscore, tails=tails)
-  sp.sig$Sp <- x
-  return(sp.sig)
-})
-spp.sig <- do.call(rbind,spp)
-return(spp.sig)
-
 genNullDist <- function(data, metrics, mean.by="SpSiteYr",zscore=TRUE) {
   
   #give each element of the long list a unique number
