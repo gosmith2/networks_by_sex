@@ -4,20 +4,46 @@ library(vegan)
 
 load("data/mix_netsYHS.RData")
 
-obs <- nets.mix.clean[[1]]
+distValues.df <- distComp(nets.mix.clean,"horn")
+distValues.df$SpSiteYr <- paste(distValues.df$GenusSpecies,
+                                distValues.df$SiteYr,
+                                sep="_")
+distValues.df$SpSiteYr <- gsub("\\.","_",distValues.df$SpSiteYr)
 
-obsz<-obs[["Zamora.2014"]]
+save(distValues.df,file='data/distValues.RData')
 
-mh(as.matrix(obsz))
+pb_upload("data/distValues.RData",
+          name="distValues.RData",
+          tag="data.v.1")
+pb_download("distValues.RData",
+            dest="data",
+            tag="data.v.1")
 
-mh(obsz[2:3,c("Halictus tripartitus_f","Halictus tripartitus_m")]))
-
-vegdist(t(obsz),method="horn") #(make this a matrix, rather than a distance object)
+zscoreDist <- calcDistZ(distValues.df,"SpSiteYr")
 
 
 
-test1<-distComp(nets.mix.clean,"horn")
+zscore_traits.df$distance <- distValues.df$distance[match(zscore_traits.df$SpSiteYr,
+                                              distValues.df$SpSiteYr)]
 
-spec.h %>%
-  filter(Site=="Berm",Year==2012,GenusSpecies=="Toxomerus marginatus")%>%
-  select(GenusSpecies,Sex)
+lectyDist<-lme(distance~Lecty,data=zscore_traits.df,
+              random=~1|GenusSpecies,na.action=na.omit)
+summary(lectyDist)
+plot(zscore_traits.df$distance~zscore_traits.df$Lecty)
+
+rareDist<-lme(distance~r.degree,data=zscore_traits.df,
+               random=~1|GenusSpecies,na.action=na.omit)
+summary(rareDist)
+plot(zscore_traits.df$distance~zscore_traits.df$r.degree)
+
+degDist<-lme(distance~degree.y,data=zscore_traits.df,
+              random=~1|GenusSpecies,na.action=na.omit)
+summary(degDist)
+plot(zscore_traits.df$distance~zscore_traits.df$degree.y)
+
+dDist<-lme(distance~d.y,data=zscore_traits.df,
+             random=~1|GenusSpecies,na.action=na.omit)
+summary(dDist)
+plot(zscore_traits.df$distance~zscore_traits.df$d.y)
+
+

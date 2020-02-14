@@ -574,3 +574,44 @@ distComp <- function(dataset, compMethod) {
   allDist <- do.call(rbind, simDistance)
   return(allDist)
 }
+
+distTest <- function(zDist, tails = 1) {
+  ## calculates the proportion of z scores above a threshold based
+  ## on tails (5% for 1 tail, 2.5% each direction for 2). Can alternatively
+  ## give the proportion of sp+site+yr observations whose iterations
+  ## differed from the observed over 95% of the time. 
+  
+  if(tails == 1){
+    y <- sum(1.645 <= zDist$distance) / length(zDist$distance)
+    
+  } else {
+    y <- sum(1.96<=zDist$distance | -1.96>=zDist$distance) / length(zDist$distance)
+  }
+  return(y)
+}
+
+calcDistZ <- function(data, level, zscore = TRUE) {
+  
+  #combine values for sp+yr+site
+  sigLevel <- mclapply(unique(data[[level]]), function(x) {
+    lev <- filter(data, data[[level]] == x)
+    obs <- filter(lev, lev$sim == 1)
+    
+    #calculate the zscore of the observed difference, 
+    #or proportion of simulations <= observed
+    #browser()
+    mets <- 
+      if (zscore == TRUE){
+        metZ <- (lev[1,2] - mean(lev[,2]))/
+          (sd(lev[,2])+10^-10)
+      }else{
+        metprop <- (sum(lev[,x] < obs[,x]) + sum(lev[,x] == obs[,x])/2)  / length(lev[level])
+      }
+    mets <- data.frame(distanceZ=mets,Level=x)
+    return(mets)
+  })
+  
+  #bind these all together
+  sig.dist <- do.call(rbind,sigLevel)
+  return(sig.dist)
+}
