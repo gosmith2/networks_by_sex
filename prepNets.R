@@ -194,8 +194,24 @@ ran.sex <- function(spec.data){
   return(do.call(rbind, unlist(col.ls, recursive=FALSE)))
 }
 
+ran.sex.SpYr <- function(spec.data){
+  col.ls <- lapply(unique(spec.data$Year),function(x){
+    net <- filter(spec.data,Year==x)
+    sp.mix.col <-lapply(unique(net$GenusSpecies), function(y){
+      sp<-filter(net,net$GenusSpecies==y)
+      if(length(unique(sp$Sex)) != 1){
+        sp$MixSex<-sample(sp$Sex,replace=FALSE)
+      }else{
+        sp$MixSex <- sp$Sex
+      }
+      return(sp)
+    })
+  })
+  return(do.call(rbind, unlist(col.ls, recursive=FALSE)))
+}
 
-ran.gen<-function(spec.data,iterations,cores){
+
+ran.gen<-function(spec.data,iterations,cores, level="SpSiteYr"){
   #setup: add column to actual observation df
   spec.data$MixSex<-spec.data$Sex
   spec.data$GenusSpeciesMix<-paste(spec.data$GenusSpecies,
@@ -212,14 +228,22 @@ ran.gen<-function(spec.data,iterations,cores){
   #scramble sex column within each species within each network
   it.vec<-1:iterations
   randoms<-mclapply(it.vec, function(z){
-    spec.keeps<-ran.sex(spec.keeps)
-    spec.keeps$GenusSpeciesMix<-paste(spec.keeps$GenusSpecies,
-                                     spec.keeps$MixSex,
-                                     sep="_")
+    if(level=="SpSiteYr") {
+      spec.keeps<-ran.sex(spec.keeps)
+      spec.keeps$GenusSpeciesMix<-paste(spec.keeps$GenusSpecies,
+                                        spec.keeps$MixSex,
+                                        sep="_")
+    } else {
+      spec.keeps<-ran.sex.SpYr(spec.keeps)
+      spec.keeps$GenusSpeciesMix<-paste(spec.keeps$GenusSpecies,
+                                        spec.keeps$MixSex,
+                                        sep="_")
+    }
+    
     return(spec.keeps)
   }, mc.cores = cores)
   destList<-c(destList,randoms)
-  
+  browser()
   #check that the sexes actually mixed
   ifelse((destList[[1]] %>%
             filter(SiteYr=='Zamora 2014',
@@ -457,7 +481,6 @@ overallTest <- function(prop.dist, metrics, tails = 1, zscore = TRUE) {
   ## differed from the observed over 95% of the time. 
   
   alpha <- lapply(metrics, function(x){
-    print(x)
     clean <- !is.na(prop.dist[,x])
     clean.df <- prop.dist[clean,]
     if(tails == 1){

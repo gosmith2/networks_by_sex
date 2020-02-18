@@ -24,6 +24,10 @@ load("data/spec.all.RData")
 ## It is currently written to be processed by 10 processor
 ## cores via the function mclapply. 
 
+pb_download("spec.all.RData",
+          dest="data",
+          tag="data.v.1")
+
 ## cores should be 3 for bombus, 10 for osmia
 cores <- 10
 
