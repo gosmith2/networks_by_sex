@@ -466,11 +466,17 @@ overallTest <- function(prop.dist, metrics, tails = 1, zscore = TRUE) {
       } else{
         y <- sum(0.05 >= clean.df[,x]) / length(clean.df[,x])
       }
-    } else {
+    } else if(tails == 2){
       if(zscore == TRUE) {
         y <- sum(1.96<=clean.df[,x] | -1.96>=clean.df[,x]) / length(clean.df[,x])
       } else{
-        y <- sum(0.025>=clean.df[,x] | 0.975<=clean.df) / length(clean.df[,x])
+        y <- sum(0.025>=clean.df[,x] | 0.975<=clean.df[,x]) / length(clean.df[,x])
+      }
+    } else {
+      if(zscore == TRUE) {
+        y <- sum(-1.645 >= clean.df[,x]) / length(clean.df[,x])
+      } else{
+        y <- sum(0.95 <= clean.df[,x]) / length(clean.df[,x])
       }
     }
   })
@@ -591,7 +597,6 @@ distTest <- function(zDist, tails = 1) {
 }
 
 calcDistZ <- function(data, level, zscore = TRUE) {
-  
   #combine values for sp+yr+site
   sigLevel <- mclapply(unique(data[[level]]), function(x) {
     lev <- filter(data, data[[level]] == x)
@@ -599,7 +604,6 @@ calcDistZ <- function(data, level, zscore = TRUE) {
     
     #calculate the zscore of the observed difference, 
     #or proportion of simulations <= observed
-    #browser()
     mets <- 
       if (zscore == TRUE){
         metZ <- (lev[1,2] - mean(lev[,2]))/

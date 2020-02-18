@@ -21,29 +21,10 @@ pb_download("distValues.RData",
 
 zscoreDist <- calcDistZ(distValues.df,"SpSiteYr")
 
+overallTest(zscoreDist,"distanceZ")
 
 
-zscore_traits.df$distance <- distValues.df$distance[match(zscore_traits.df$SpSiteYr,
-                                              distValues.df$SpSiteYr)]
 
-lectyDist<-lme(distance~Lecty,data=zscore_traits.df,
-              random=~1|GenusSpecies,na.action=na.omit)
-summary(lectyDist)
-plot(zscore_traits.df$distance~zscore_traits.df$Lecty)
-
-rareDist<-lme(distance~r.degree,data=zscore_traits.df,
-               random=~1|GenusSpecies,na.action=na.omit)
-summary(rareDist)
-plot(zscore_traits.df$distance~zscore_traits.df$r.degree)
-
-degDist<-lme(distance~degree.y,data=zscore_traits.df,
-              random=~1|GenusSpecies,na.action=na.omit)
-summary(degDist)
-plot(zscore_traits.df$distance~zscore_traits.df$degree.y)
-
-dDist<-lme(distance~d.y,data=zscore_traits.df,
-             random=~1|GenusSpecies,na.action=na.omit)
-summary(dDist)
-plot(zscore_traits.df$distance~zscore_traits.df$d.y)
+#hive plot
 
 
