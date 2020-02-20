@@ -5,20 +5,28 @@ pb_download("zscore50_2.RData",
             dest="data",
             tag="data.v.1")
 
-pb_download("sexDiffsProp50YH_2.Rdata",
+pb_download("sexDiffsProp50YH_20.Rdata",
             dest="data",
             tag="data.v.1")
 
 load("data/zscore50_2.RData")
-load("data/sexDiffsProp50YH_2.Rdata")
+load("data/sexDiffsProp50YH_20.Rdata")
 
+metric.ls <- c("degree","species.strength","weighted.betweenness",
+               "weighted.closeness","d")
 
 
 ###------------------
 ##Test: proportion of species+sites where m v f difference in
 ##observed network was larger than many of the simulations
 
-overallTest(sexDiffsProp50_2.df, metric.ls, zscore=F)
+overallTest(sexDiffsProp50_2.df, metric.ls, tails=1, zscore=F)
+overallTest(sexDiffsProp50_3.df, metric.ls, tails=1, zscore=F)
+overallTest(sexDiffsProp50_5.df, metric.ls, tails=1, zscore=F)
+overallTest(sexDiffsProp50_10.df, metric.ls, tails=1, zscore=F)
+overallTest(sexDiffsProp50_20.df, metric.ls, tails=1, zscore=F)
+
+
 
 overallTest(zscore50_2.df, metric.ls, zscore=T)
 
@@ -32,7 +40,7 @@ spLevelTest(zscore50_2.df,metric.ls,zscore=T)
 #results: tons of zeros
 
 #familylevel
-spLevelTest(zscore50_2.df,metric.ls,zscore=T,level="Family")
+spLevelTest(sexDiffsProp50_5.df,metric.ls,zscore=F,level="Family")
 
 
 sexDiffsProp50_2.df %>%
@@ -76,14 +84,16 @@ abline(v=0)
 ##
 #----------Roswell paper notes
 
-#generally, a lot more sampling, I think. like, all day
+#6 meadow sites, sampling at minimum 6 30-mintue sampling periods
   #for 3 days
+  #5 rounds throughout the summer each
 
 #Do males and females overlap in diet?
+  #permuted bee sex in the visitation record
   #9999 iterations: this many reqed to stabilize for 0.05 alpha
     #based on North, Curtis, and Sham 2002
   #)"When the observed dissimilarity was greater than 9500
-    #ofthe 9999 simulated dissimilarities, we concluded that
+    #of the 9999 simulated dissimilarities, we concluded that
     #we had detected a difference in the pattern of floral
     #visitation between conspecific male and female bees, 
     #given the observed diet breadth and abundance of each sex.

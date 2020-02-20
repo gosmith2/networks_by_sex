@@ -11,6 +11,7 @@ library(piggyback) #
 library(bipartite) #
 library(tidyverse) #
 library(parallel) #
+library(stringr)
 library(nlme)
 
 source('prepNets.R')

@@ -34,7 +34,9 @@ cores <- 10
 ## randomize the sexes w/in species w/in sites. observed network is
 ## element 1 of the resulting list, randomized are elements 2-1000
 
-rand.sexes.ls <- ran.gen(spec.all, 999, cores)
+rand.sexes.ls <- ran.gen(spec.all, 2, cores)
+
+rand.sexes.SpYr.ls <- ran.gen(spec.all,3,cores,"SpYr")
 
 
 #build the networks at the sex level using the mixed sexes
@@ -42,21 +44,28 @@ nets.mix <- mclapply(rand.sexes.ls, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
 
+nets.mix.SpYr <- mclapply(rand.sexes.SpYr.ls, function(y){
+  breakNetMixSpYr(y, 'Year', 'GenusSpeciesMix')
+}, mc.cores = cores)
+
 ## confirm that the networks are actually different
-ifelse(nets.mix[[1]]$Zamora.2014[[8]]
-       ==
-       nets.mix[[2]]$Zamora.2014[[8]],
-       print("WARNING: the networks may be not different between randomizations"),
-       print("SUCCESS: the networks are different between randomizations")
-)
+ifelse(any(nets.mix[[1]][[1]]!=nets.mix[[2]][[1]]),
+       print("SUCCESS: the networks are different"),
+       print("WARNING: the networks may not be different"))
+
 
 #remove all networks with too few interactions to calculate metrics
 nets.mix.clean <- mclapply(nets.mix, function(x){
   x[sapply(x, function(y) all(dim(y) > 1))]
 }, mc.cores=cores)
 
+nets.mix.cleanSpYr <- mclapply(nets.mix.SpYr, function(x){
+  x[sapply(x, function(y) all(dim(y) > 1))]
+}, mc.cores=cores)
+
 #save the networks themselves
 save(nets.mix.clean, file = 'data/mix_netsYHS.RData')
+pb_upload("data/mix_netsYHS.RData")
 
 ####-------------------------------------------####
 #### Calculate node-level network parameters
@@ -67,18 +76,36 @@ sex.trts.mix2 <- mclapply(nets.mix.clean,
                           function(x) calcSpec(x, indiv = 2),
                           mc.cores = cores)
 
+sex.trts.mix3 <- mclapply(nets.mix.clean,
+                          function(x) calcSpec(x, indiv = 3),
+                          mc.cores = cores)
+
+sex.trts.mix5 <- mclapply(nets.mix.clean,
+                          function(x) calcSpec(x, indiv = 5),
+                          mc.cores = cores)
+
+sex.trts.mix10 <- mclapply(nets.mix.clean,
+                          function(x) calcSpec(x, indiv = 10),
+                          mc.cores = cores)
+sex.trts.mix20 <- mclapply(nets.mix.clean,
+                           function(x) calcSpec(x, indiv = 20),
+                           mc.cores = cores)
+
+save(sex.trts.mix3,file='data/sex_trts_mix3.RData')
+save(sex.trts.mix5,file='data/sex_trts_mix5.RData')
+save(sex.trts.mix10,file='data/sex_trts_mix10.RData')
+save(sex.trts.mix20,file='data/sex_trts_mix10.RData')
+
+
+sex.trts.mix2SpYr <- mclapply(nets.mix.cleanSpYr,
+                          function(x) calcSpec(x, indiv = 2, lvl="SpYr"),
+                          mc.cores = cores)
+
 ## confirm that the values are different
-ifelse((sex.trts.mix2[[1]] %>%
-	filter(Site == "Zamora", Year == 2014) %>%
-  select(species.strength) %>%
-  head())
-	==
-	  (sex.trts.mix2[[2]] %>%
-	     filter(Site == "Zamora", Year == 2014) %>%
-	     select(species.strength) %>%
-	     head()),
-	print("WARNING: the network statistics may be not different between randomizations"),
-	print("SUCCESS: the network statistics are different between randomizations")
+ifelse(any(sex.trts.mix2[[1]]$species.strength!=
+             sex.trts.mix2[[2]]$species.strength),
+       print("SUCCESS: the network statistics are different between randomizations"),
+       print("WARNING: the network statistics may be not different between randomizations")
 )
 	
 

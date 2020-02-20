@@ -26,8 +26,8 @@ metric.ls <- c("degree","species.strength","weighted.betweenness",
 cores <- 10
 
 ##clean up the datasets, add some necessary columns to speed things up
-traits2.ls <-
-  mclapply(sex.trts.mix2, function(x){
+traits20.ls <-
+  mclapply(sex.trts.mix20, function(x){
   x$SiteYr <- paste(x$Site, x$Year, sep="_")
   x$Sp <- gsub( "_.*$", "", x$GenusSpecies )
   x <- filter(x,x$sex == "m" | x$sex == "f")
@@ -42,26 +42,32 @@ traits2.ls <-
 
 sexDiffs2.df <- makeComp(traits2.ls, metric.ls, comparison = "diff")
 
+sexDiffs3.df <- makeComp(traits3.ls, metric.ls, comparison = "diff")
+sexDiffs5.df <- makeComp(traits5.ls, metric.ls, comparison = "diff")
+sexDiffs10.df <- makeComp(traits10.ls, metric.ls, comparison = "diff")
+sexDiffs20.df <- makeComp(traits20.ls, metric.ls, comparison = "diff")
+
+
 #17/196 networks are from SI, rest from HR. NONE from Yos
 
 
 ## Saving and uploading after that long step
-save(sexDiffs2.df, file = 'data/sexDiffs2.RData')
+save(sexDiffs20.df, file = 'data/sexDiffs20.RData')
 
-pb_upload('data/sexDiffs2.RData',
-          name='sexDiffs2.RData',
+pb_upload('data/sexDiffs20.RData',
+          name='sexDiffs20.RData',
           tag="data.v.1")
 
-pb_download("sexDiffs2.RData",
+pb_download("sexDiffs20.RData",
             dest="data",
             tag="data.v.1")
 
-load('data/sexDiffs2.RData')
+load('data/sexDiffs20.RData')
 
 ###------------------
 ##Calculate how different the observed values were from the simulated
 
-sexDiffsProp50_2.df <- calcNullProp50(sexDiffs2.df,
+sexDiffsProp50_20.df <- calcNullProp50(sexDiffs20.df,
                                       metric.ls,
                                       zscore=F)
 
@@ -71,20 +77,24 @@ zscore50_2.df %>%
   mutate(GenusSpecies = gsub( "_.*$", "", SpSiteYr)) ->
   zscore50_2.df
 
+sexDiffsProp50_5.df$GenusSpecies <- gsub("_.*$", "", sexDiffsProp50_5.df$SpSiteYr)
+sexDiffsProp50_5.df$Family <- spec.all$Family[match(sexDiffsProp50_5.df$GenusSpecies,
+                                              spec.all$GenusSpecies)]
+
 zscore50_2.df$Family <- spec.all$Family[match(zscore50_2.df$GenusSpecies,
                                               spec.all$GenusSpecies)]
 zscore50_2.df[432,8] <- "Syrphidae"
 
 save(zscore50_2.df,file="data/zscore50_2.RData")
 
-save(sexDiffsProp50_2.df,file='data/sexDiffsProp50YH_2.Rdata')
+save(sexDiffsProp50_20.df,file='data/sexDiffsProp50YH_20.Rdata')
 
 pb_upload("data/zscore50_2.RData",
           name="zscore50_2.RData",
           tag="data.v.1")
 
-pb_upload("data/sexDiffsProp50YH_2.Rdata",
-          name="sexDiffsProp50YH_2.Rdata",
+pb_upload("data/sexDiffsProp50YH_20.Rdata",
+          name="sexDiffsProp50YH_20.Rdata",
           tag="data.v.1")
 
 

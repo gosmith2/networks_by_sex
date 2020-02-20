@@ -57,6 +57,27 @@ breakNetMix <- function(spec.dat, site, year, mix){
   return(comms)
 }
 
+breakNetMixSpYr <- function(spec.dat, year, mix){
+  ## puts data together in a list and removes empty matrices
+  agg.spec <- aggregate(list(abund=spec.dat[,mix]),
+                        list(GenusSpeciesMix=spec.dat[,mix],
+                             Year=spec.dat[,year],
+                             PlantGenusSpecies=
+                               spec.dat$PlantGenusSpecies),
+                        length)
+  networks <- split(agg.spec, agg.spec[,year])
+  ## formats data matrices appropriate for network analysis
+  ## formats data matrices appropriate for network analysis
+  vec <- 1:length(networks)
+  comms <- lapply(names(networks), function(y){
+    net <- samp2site.spp(site=networks[y][[y]]$PlantGenusSpecies,
+                  spp=networks[y][[y]]$GenusSpeciesMix,
+                  abund=networks[y][[y]]$abund)
+  })
+  
+  return(comms)
+}
+
 
 getSpecies <- function(networks, FUN){
   species.site <- lapply(networks, FUN)
@@ -104,7 +125,7 @@ getCon <- function(x, INDEX){
 ## with site status and ypr
 ## takes networks and specimen data
 
-calcSpec <- function(nets, spec, indiv = 1){
+calcSpec <- function(nets, indiv = 1, lvl = "SpSiteYr"){
   ## applies specieslevel from bipartite to networks
   species.lev <- lapply(nets, function(x){
     
@@ -124,13 +145,22 @@ calcSpec <- function(nets, spec, indiv = 1){
   #sum up under species (rowsums or such)
   
   ## extract the values and make a dataframe
-  specs  <-  mapply(function(a, b)
-    getSpec(species.lev = a,
-            names.net = b,
-            seps="[.]"),
-    a = species.lev,
-    b = names(nets),
-    SIMPLIFY = FALSE)
+  if(lvl=="SpSiteYr") {
+    specs <- mapply(function(a, b)
+      getSpec(species.lev = a,
+              names.net = b,
+              seps="[.]"),
+      a = species.lev,
+      b = names(nets),
+      SIMPLIFY = FALSE)
+  } else {
+    specs <- mapply(function(a, b)
+      getSpecSpYr(species.lev = a,
+              names.net = b,
+              seps="[.]"),
+      
+      SIMPLIFY = FALSE)
+  }
   
   specs <- do.call(rbind, specs)
   specs$sex <- substr(specs$GenusSpecies,
@@ -157,6 +187,20 @@ getSpec <- function(species.lev, names.net, seps="_"){
                           rep("plant", n.pp[2]))
   all.pp$Site <- strsplit(names.net, seps)[[1]][1]
   all.pp$Year <- strsplit(names.net, seps)[[1]][2]
+  return(all.pp)
+}
+
+getSpecSpYr <- function(species.lev, names.net, seps="_"){
+  browser()
+  n.pp <- sapply(species.lev, nrow)
+  pp <- c(unlist(sapply(species.lev, rownames)))
+  names(pp) <- NULL
+  all.pp <- do.call(rbind, species.lev)
+  rownames(all.pp) <- NULL
+  try(all.pp$GenusSpecies <- pp)
+  all.pp$speciesType <- c(rep("pollinator", n.pp[1]),
+                          rep("plant", n.pp[2]))
+  all.pp$Year <- strsplit(names.net, seps)[[1]][1]
   return(all.pp)
 }
 
@@ -243,22 +287,11 @@ ran.gen<-function(spec.data,iterations,cores, level="SpSiteYr"){
     return(spec.keeps)
   }, mc.cores = cores)
   destList<-c(destList,randoms)
-  browser()
   #check that the sexes actually mixed
-  ifelse((destList[[1]] %>%
-            filter(SiteYr=='Zamora 2014',
-                   GenusSpecies=="Halictus tripartitus",
-                   Sex=="m") %>%
-            select(GenusSpeciesMix))
-         ==
-           (destList[[2]] %>%
-              filter(SiteYr=='Zamora 2014',
-                     GenusSpecies=="Halictus tripartitus",
-                     Sex=="m") %>%
-              select(GenusSpeciesMix)),
-         print("WARNING: the sexes did not mix correctly"),
-         print("SUCCESS: the sexes mixed correctly")
-  )
+  
+  ifelse(any(destList[[2]]$Sex!=destList[[2]]$MixSex),
+         print("SUCCESS: the sexes mixed correctly"),
+         print("WARNING: the sexes did not mix correctly"))
   
   return(destList)
 }
@@ -565,26 +598,44 @@ genNullDist <- function(data, metrics, mean.by="SpSiteYr",zscore=TRUE) {
   return(sig.dist)
 }
 
-distComp <- function(dataset, compMethod) {
+distComp <- function(dataset, compMethod, indiv = 1) {
+  #narrow down to each randomized simulation
   sim.vec <- seq(1:length(dataset))
   simDistance <- mclapply(sim.vec, function(x) {
     sim <- dataset[[x]]
+    
+    #narrow down to each network in that simulation
     net.vec <- seq(1:length(sim))
     netDist <- lapply(net.vec, function(y) {
       net <- sim[y]
+      
+      #Make list of pollinator nodes in that network
       nodeList <- colnames(net[[1]])
+      
+      #remove nodes where sex wasn't defined
       nodeListClean <- unlist(lapply(nodeList,function(a){
         if(gsub( "^.*_", "", a) == "m" |gsub( "^.*_", "", a) == "f"){
           return(a)
         }
       }))
+      
+      #generate list of only species where both sexes are present
       spList <- gsub( "_.*$", "", nodeListClean)
       sexList <- unlist(spList[duplicated(spList)])
-      if(length(sexList)==0){
+      
+      #generate list of only species where both sexes have a minimum number of individuals
+      minList <- lapply(sexList, function(b){
+        min <- min(colSums(net[[1]][,c(paste0(b,"_m"),paste0(b,"_f"))]))
+      })
+      minDf <- data.frame(Sp = sexList,min = unlist(minList)) 
+      targetList <- minDf$Sp[minDf$min>=indiv]
+      
+      #for the target species, calculate the distance index
+      if(length(targetList)==0){
         netVal <- data.frame(GenusSpecies=NA,distance=NA,SiteYr=names(net))
         
       } else {
-        spDist <- lapply(sexList, function(z){
+        spDist <- lapply(targetList, function(z){
           
           comp <- net[[1]][,c(paste0(z,"_m"),paste0(z,"_f"))]
           dist <- as.matrix(vegdist(t(comp),method=compMethod))
@@ -624,7 +675,7 @@ calcDistZ <- function(data, level, zscore = TRUE) {
   sigLevel <- mclapply(unique(data[[level]]), function(x) {
     lev <- filter(data, data[[level]] == x)
     obs <- filter(lev, lev$sim == 1)
-    
+
     #calculate the zscore of the observed difference, 
     #or proportion of simulations <= observed
     mets <- 
@@ -632,7 +683,7 @@ calcDistZ <- function(data, level, zscore = TRUE) {
         metZ <- (lev[1,2] - mean(lev[,2]))/
           (sd(lev[,2])+10^-10)
       }else{
-        metprop <- (sum(lev[,x] < obs[,x]) + sum(lev[,x] == obs[,x])/2)  / length(lev[level])
+        metprop <- (sum(lev[,2] < obs[,2]) + sum(lev[,2] == obs[,2])/2)  / length(lev[,level])
       }
     mets <- data.frame(distanceZ=mets,Level=x)
     return(mets)
