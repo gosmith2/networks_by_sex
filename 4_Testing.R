@@ -1,4 +1,4 @@
-## 4: Testing and models
+## 4: Overall tests of network role differences
 
 
 pb_download("zscore50_2.RData",
@@ -18,7 +18,10 @@ metric.ls <- c("degree","species.strength","weighted.betweenness",
 
 ###------------------
 ##Test: proportion of species+sites where m v f difference in
-##observed network was larger than many of the simulations
+##observed network was larger than many of the simulations. The output
+##is the proportion of observations (Sp+Site+Year) where the male-female
+## difference diverged from null expectations more than some threshold 
+## (with the specific threshold used based on the tails of the test)
 
 overallTest(sexDiffsProp50_2.df, metric.ls, tails=1, zscore=F)
 overallTest(sexDiffsProp50_3.df, metric.ls, tails=1, zscore=F)
@@ -26,7 +29,7 @@ overallTest(sexDiffsProp50_5.df, metric.ls, tails=1, zscore=F)
 overallTest(sexDiffsProp50_10.df, metric.ls, tails=1, zscore=F)
 overallTest(sexDiffsProp50_20.df, metric.ls, tails=1, zscore=F)
 
-
+#e.g., in ____ % of observations, ___. 
 
 overallTest(zscore50_2.df, metric.ls, zscore=T)
 
