@@ -4,6 +4,7 @@
 
 ##this should be run on lauren's computer via terminal (git bash):
 #ssh gsmith@osmia.dyn.ucr.edu
+#ssh 192.168.1.5
 #cd Documents
 #git clone https://github.com/gosmith2/networks_by_sex.git
 #cd Documents/networks_by_sex

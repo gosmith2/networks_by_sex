@@ -34,11 +34,24 @@ netStats.sex <- mclapply(nets.obs.sex,
                          index=metric.net,
                          mc.cores=cores)
 
+netStats.sexCI <- mclapply(nets.obs.sex,
+                         calcNetworkMetricsCI,
+                         N=N,
+                         index=metric.net,
+                         mc.cores=cores)
+
+
 save(netStats.sex, file = "data/netStats_sex.RData")
+save(netStats.sexCI, file = "data/netStats_sex_CI.RData")
 
 pb_upload("data/netStats_sex.RData",
-          name="netStats_sex.RData",
+          name="netStats_sex.R=Data",
           tag="data.v.1")
+
+pb_upload("data/netStats_sex_CI.RData",
+          name="netStats_sex_CI.R=Data",
+          tag="data.v.1")
+
 
 ##all networks, males and females lumped into species
 nets.obs.sp <- breakNet(spec.all,'Site','Year')
@@ -48,10 +61,20 @@ netStats.sp <- mclapply(nets.obs.sp,
                         index=metric.net,
                         mc.cores=cores)
 
-save(netStats.sp, file = "data/netStats_sp.RData")
+netStats.spCI <- mclapply(nets.obs.sp,
+                        calcNetworkMetricsCI,
+                        N=N,
+                        index=metric.net,
+                        mc.cores=cores)
+
+
+save(netStats.spCI, file = "data/netStats_sp_CI.RData")
 
 pb_upload("data/netStats_sp.RData",
           name="netStats_sp.RData",
+          tag="data.v.1")
+pb_upload("data/netStats_sp_CI.RData",
+          name="netStats_sp_CI.RData",
           tag="data.v.1")
 
 ##all networks, males dropped
@@ -63,12 +86,22 @@ netStats.f <- mclapply(nets.obs.f,
                        N=N,
                        index=metric.net,
                        mc.cores=cores)
+netStats.fCI <- mclapply(nets.obs.f,
+                       calcNetworkMetricsCI,
+                       N=N,
+                       index=metric.net,
+                       mc.cores=cores)
 
 save(netStats.f, file = "data/netStats_f.RData")
+save(netStats.fCI, file = "data/netStats_f_CI.RData")
 
 pb_upload("data/netStats_f.RData",
           name="netStats_f.RData",
           tag="data.v.1")
+pb_upload("data/netStats_f_CI.RData",
+          name="netStats_f_CI.RData",
+          tag="data.v.1")
+
 
 
 ##Load and merge the 3 stats datasets
@@ -105,13 +138,13 @@ netStats.all <- do.call(rbind,
                                })
 )
 
-ggplot(netStats.all, aes(x=zH2, color=trt)) +
+ggplot(netStats.all, aes(x=pH2, color=trt)) +
   geom_density()
 
 ggplot(netStats.all, aes(x=zniche.overlap.HL, color=trt)) +
   geom_density()
 
-ggplot(netStats.all, aes(x=zrobustness.HL, color=trt)) +
+ggplot(netStats.all, aes(x=robustness.HL, color=trt)) +
   geom_density()
 
 ggplot(netStats.all, aes(x=functional.complementarity.LL, color=trt)) +
@@ -122,6 +155,27 @@ ggplot(netStats.all, aes(x=generality.HL, color=trt)) +
 
 ggplot(netStats.all, aes(x=zvulnerability.LL, color=trt)) +
   geom_density()
+
+
+trtComp <- function (trt1,trt2) {
+  one <- subset(netStats.all, netStats.all$trt == trt1)
+  two <- subset(netStats.all, netStats.all$trt == trt2) 
+  
+  loop.ls <- c(1:39)
+  combo <- lapply(loop.ls, function(x){
+    comb <- as.vector(one[x]-two[x])
+    return(comb)
+  })
+  
+  clean <- do.call(cbind,combo)
+  clean$SiteYr <- one$SiteYr
+  clean$trt <- paste(trt1,trt2,sep = "-")
+  return(clean)
+}
+
+sp_f.comp <- trtComp("sp","fem")
+sp_sex.comp <- trtComp("sp","sex")
+
 
 
 

@@ -1,3 +1,4 @@
+#3: Calculations
 #Runs analyses on the species-level network parameters calculated in
 #netBuilding.R
 
@@ -37,8 +38,10 @@ traits20.ls <-
 
 
 ###------------------
-##calculate how different males and females within each species
-##within each SiteYr are in each iteration
+## calculate how different males and females within each species
+## within each SiteYr are in each iteration. Comparison is 
+## [male value - female value]: in the sexDiffs output, large values
+## indicate that males had larger values than females.
 
 sexDiffs2.df <- makeComp(traits2.ls, metric.ls, comparison = "diff")
 
@@ -66,6 +69,11 @@ load('data/sexDiffs20.RData')
 
 ###------------------
 ##Calculate how different the observed values were from the simulated
+##when zscore=F, outupts the proportion of simulations where the value
+## was less than or 50% equal to the obesrved difference value. 
+## High proportions indicate that males were larger than females to a
+## greater degree than was expected. Low proportions indicate that 
+## females had higher values than males to a greater degree than expected
 
 sexDiffsProp50_20.df <- calcNullProp50(sexDiffs20.df,
                                       metric.ls,
@@ -77,6 +85,7 @@ zscore50_2.df %>%
   mutate(GenusSpecies = gsub( "_.*$", "", SpSiteYr)) ->
   zscore50_2.df
 
+#Add back in the GenusSpecies and Family columns 
 sexDiffsProp50_5.df$GenusSpecies <- gsub("_.*$", "", sexDiffsProp50_5.df$SpSiteYr)
 sexDiffsProp50_5.df$Family <- spec.all$Family[match(sexDiffsProp50_5.df$GenusSpecies,
                                               spec.all$GenusSpecies)]
