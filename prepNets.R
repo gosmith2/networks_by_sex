@@ -748,3 +748,41 @@ calcDistZ <- function(data, level, zscore = TRUE) {
   sig.dist <- do.call(rbind,sigLevel)
   return(sig.dist)
 }
+
+
+simExtinction <- function(nets,
+                          extinction.method,
+                          spec,
+                          partic="lower"){
+  #nets = network list object; extinction.method = "abundance", "degree", or "random" 
+  #spec = original species interaciton obs?; partic = participant to drop: "lower" (plant), "higher" (animal) or "both"
+  
+  ext <- lapply(nets, second.extinct,
+                participant=partic,
+                method=extinction.method)
+  
+  rob <- sapply(ext, robustness)
+  sites <- sapply(strsplit(names(rob), "[.]"), function(x) x[1])
+  years <- sapply(strsplit(names(rob), "[.]"), function(x) x[2])
+  
+  dats <- data.frame(Site= sites,
+                     Year=years,
+                     Robustness=rob)
+  rownames(dats) <- NULL
+  
+  dats$Lat <- spec$Lat[match(dats$Site, spec$Site)]
+  
+  return(dats)
+}
+
+
+
+
+
+
+
+
+
+
+sexExtinction(nets.mix.clean[[1]][[1]],participant = "higher", method = "abundance")
+
