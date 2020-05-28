@@ -12,30 +12,222 @@ pb_download("spec.all.RData",
 
 load('data/spec.all.RData')
 
-metric.net <- c('connectance',
-                'number of compartments',
-                'nestedness',
-                'NODF',
+metric.net <- c('NODF',
                 'H2',
                 'robustness',
                 'vulnerability',
-                'niche overlap',
-                'functional complementarity')
+                'niche overlap')
 
 N = 999
 cores = 10
 
 
-##### NOTE!!!!! Before running these, you should probably subset down to the networks where at least 1 species 
-  # displayed sex differences!! e.g.:
+#Using the randomized networks built in 2_NetBuilding, calculate network level metrics
+sexlvl <- mclapply(nets.mix.clean,
+                   function(x) calcNets(x, metrics = metric.net),
+                   mc.cores = cores)
+save(sexlvl,file="data/sexlvl.RData")
 
-#spec.net <- spec.all[spec.all$site %in% unique(list)]
+
+#Compare observed metric values to simulated null network metric values
+sexlvlProp50 <- calcNullProp50(sexlvl,
+                             fmet,
+                             zscore=F,
+                             level="network")
+
+
+#Repeat above to generate z-scores for plotting
+sexlvlProp50Z <- calcNullProp50(sexlvl,
+                               fmet,
+                               zscore=T,
+                               level="network")
+
+
+
+##Test: proportion of networks where values in the observed 
+## network was significantly different than many of the simulations.
+
+overallTest(sexlvlProp50, fmet, tails=1, zscore=F)
+
+
+
+
+
+######-------------------------------
+
+# - Alternative code that will be removed before pub
+
+######-------------------------------
+
+
+sexlvlProp50$mProp <- unlist(lapply(sexlvlProp50$SpSiteYr,function(x){
+  SY <- filter(spec.all,SiteYr==sub("\\."," ",x))
+  prop <- length(SY$Sex[SY$Sex=="m"])/length(SY$Sex)
+  return(prop)
+}))
+sexlvlProp50$size <- unlist(lapply(sexlvlProp50$SpSiteYr,function(x){
+  SY <- filter (spec.all, SiteYr == sub ('\\.'," ",x))
+  len <- length(SY$Sex)
+  return(len)
+}))
+
+
+
+
+#for the f lvl
+load('data/rand.sexes.RData')
+
+fonly.ls <- mclapply(rand.sexes.ls, function(x){
+  fobs <- x[x$MixSex=='f',]
+  fnets <- breakNet(fobs, 'Site','Year')
+  return(fnets)
+}
+,mc.cores=cores) 
+
+save(fonly.ls,file='data/fonly.RData')
+
+flvl <-  mclapply(fonly.ls,
+                  function(x) calcNets(x, metrics = metric.net),
+                  mc.cores = cores)
+save(flvl,file="data/flvl.RData")
+
+fmet <- names(flvl[[1]])[1:13]
+
+
+overallTest(flvlProp50, fmet, tails=1, zscore=F)
+#no real diffs of any note 
+#generality and vulnerability were lower in 9 and 8% of networks...
+#robustness lower in ~6%
+
+flvlProp50 <- calcNullProp50(flvl,
+                             fmet,
+                             zscore=F,
+                             level="network")
+flvlProp50$mProp <- unlist(lapply(flvlProp50$SpSiteYr,function(x){
+  SY <- filter(spec.all,SiteYr==sub("\\."," ",x))
+  prop <- length(SY$Sex[SY$Sex=="m"])/length(SY$Sex)
+  return(prop)
+}))
+flvlProp50$size <- unlist(lapply(flvlProp50$SpSiteYr,function(x){
+  SY <- filter (spec.all, SiteYr == sub ('\\.'," ",x))
+  len <- length(SY$Sex)
+  return(len)
+}))
+flvlP
+
+flvlProp50Z <- calcNullProp50(flvl,
+                              fmet,
+                              zscore=T,
+                              level="network")
+
+
+
+
+
+
+sexlvlProp50 %>%
+  select(SpSiteYr,mProp,size,vulnerability.LL) -> vuln.sex
+vuln.sex$obs <- sexlvl[[1]]$vulnerability.LL
+
+CIforgraph <- function(list, metric, nnull) {
+  cols <- lapply(list,function(x){
+    col <- x %>%
+      select(metric,SiteYr)
+  })
+  cols.df <- do.call(rbind,cols)
+  
+  
+  intervals <- lapply(unique(cols.df$SiteYr), function(y){
+    #browser()
+    sy <- filter(cols.df,SiteYr==y)
+    mean <- mean(sy[,metric],na.rm=T)
+    sd <- sd(sy[,metric], na.rm=T)
+    conf <- qt(0.975,df=nnull)*sd/sqrt(nnull+1)
+    low <- mean - conf
+    high <- mean + conf
+    df <- data.frame(low,high)
+    colnames(df) <- c("95_low","95_high")
+    return(df)
+  })
+  interval.df <- do.call(rbind, intervals)
+}
+
+
+vuln.ci <- CIforgraph(sexlvl, metric="vulnerability.LL", 999)
+vuln.sex <- cbind(vuln.sex,vuln.ci)
+vuln.sex$L95 <- vuln.sex$`95_low`-vuln.sex$obs 
+vuln.sex$H95 <- vuln.sex$`95_high`-vuln.sex$obs 
+vuln.s <- melt(vuln.sex,id=names(vuln.sex)[1:7])
+
+#QUADE
+ggplot(vuln.s)+
+  geom_line(aes(x=value,y=SpSiteYr),size=2)+
+  geom_vline(xintercept=0)
+
+
+sexlvlmelt<-melt(sexlvlProp50[,4:14],ID="SpSiteYr")
+
+ggplot(sexlvlmelt,aes(x=variable,y=value))+
+  geom_boxplot() +
+  geom_jitter(size=1,width=.2) +
+  geom_hline(yintercept=c(0.5,0.975,0.025),linetype=c("solid","dashed","dashed"),color=c("red","red","red"))+
+  theme(axis.text.x=element_text(angle=90))
+
+
+sexlvlmeltZ<-melt(sexlvlProp50Z[,4:14],ID="SpSiteYr")
+ggplot(sexlvlmeltZ,aes(x=variable,y=value))+
+  geom_boxplot() +
+  geom_jitter(size=1,width=.2) +
+  geom_hline(yintercept=c(0,1.96,-1.96),linetype=c("solid","dashed","dashed"),color=c("red","red","red"))+
+  theme(axis.text.x=element_text(angle=90))+
+  ylim(-12.5,12.5)
+
+
+
+
+
+
+#scale_y_log10()
+
+
+
+flvlmeltZ<-melt(flvlProp50Z[,4:14],ID="SpSiteYr")
+ggplot(flvlmeltZ,aes(x=variable,y=value))+
+  geom_violin(draw_quantiles=0.5) +
+  # geom_jitter(size=1,width=.2) +
+  geom_hline(yintercept=c(0,1.96,-1.96),linetype=c("solid","dashed","dashed"),color=c("red3","red3","red3"),size =0.9)+
+  theme(axis.text.x=element_text(angle=90))+
+  ylim(-12.5,12.5)
+
+
+
+prop.lm <- lm(robustness.LL~mProp*size,data=sexlvlProp50)
+summary(prop.lm) #sig interaction of prop and size
+ggplot(sexlvlProp50)+
+  geom_point(aes(x=robustness.LL,y=size,col=mProp))
+
+prop.lm <- lm(generality.HL~mProp*size,data=sexlvlProp50)
+summary(prop.lm)
+ggplot(sexlvlProp50)+
+  geom_point(aes(x=robustness.LL,y=mProp,col=size))
+
+
+fprop.lm <- lm(vulnerability.LL~mProp*size,data=flvlProp50)
+summary(fprop.lm)
+
+
+
+
+##### NOTE!!!!! Before running these, you should probably subset down to the networks where at least 1 species 
+# displayed sex differences!! e.g.:
+
+spec.net <- spec.all[spec.all$SiteYr %in% gsub("\\."," ",names(nets.mix.clean[[1]])),]
 
 #AND REMEMBER TO CHANGE SPEC.ALL to SPEC.NET DOWNSTREAM!!
 
 
 ##all networks, with males and females included separately
-nets.obs.sex<-breakNetMix(spec.all,'Site','Year',"GenusSpeciesSex")
+nets.obs.sex<-breakNetMix(spec.net,'Site','Year',"GenusSpeciesSex")
 
 netStats.sex <- mclapply(nets.obs.sex,
                          calcNetworkMetrics,
@@ -44,17 +236,17 @@ netStats.sex <- mclapply(nets.obs.sex,
                          mc.cores=cores)
 
 netStats.sexCI <- mclapply(nets.obs.sex,
-                         calcNetworkMetricsCI,
-                         N=N,
-                         index=metric.net,
-                         mc.cores=cores)
+                           calcNetworkMetricsCI,
+                           N=N,
+                           index=metric.net,
+                           mc.cores=cores)
 
 
 save(netStats.sex, file = "data/netStats_sex.RData")
 save(netStats.sexCI, file = "data/netStats_sex_CI.RData")
 
 pb_upload("data/netStats_sex.RData",
-          name="netStats_sex.R=Data",
+          name="netStats_sex.RData",
           tag="data.v.1")
 
 pb_upload("data/netStats_sex_CI.RData",
@@ -63,7 +255,7 @@ pb_upload("data/netStats_sex_CI.RData",
 
 
 ##all networks, males and females lumped into species
-nets.obs.sp <- breakNet(spec.all,'Site','Year')
+nets.obs.sp <- breakNet(spec.net,'Site','Year')
 netStats.sp <- mclapply(nets.obs.sp,
                         calcNetworkMetrics,
                         N=N,
@@ -71,10 +263,10 @@ netStats.sp <- mclapply(nets.obs.sp,
                         mc.cores=cores)
 
 netStats.spCI <- mclapply(nets.obs.sp,
-                        calcNetworkMetricsCI,
-                        N=N,
-                        index=metric.net,
-                        mc.cores=cores)
+                          calcNetworkMetricsCI,
+                          N=N,
+                          index=metric.net,
+                          mc.cores=cores)
 
 
 save(netStats.spCI, file = "data/netStats_sp_CI.RData")
@@ -87,8 +279,8 @@ pb_upload("data/netStats_sp_CI.RData",
           tag="data.v.1")
 
 ##all networks, males dropped
-spec.all.drop <- filter(spec.all, spec.all$Sex=="f")
-nets.obs.f <- breakNet(spec.all.drop,'Site','Year')
+spec.net.drop <- filter(spec.net, spec.net$Sex=="f")
+nets.obs.f <- breakNet(spec.net.drop,'Site','Year')
 
 netStats.f <- mclapply(nets.obs.f,
                        calcNetworkMetrics,
@@ -96,10 +288,10 @@ netStats.f <- mclapply(nets.obs.f,
                        index=metric.net,
                        mc.cores=cores)
 netStats.fCI <- mclapply(nets.obs.f,
-                       calcNetworkMetricsCI,
-                       N=N,
-                       index=metric.net,
-                       mc.cores=cores)
+                         calcNetworkMetricsCI,
+                         N=N,
+                         index=metric.net,
+                         mc.cores=cores)
 
 save(netStats.f, file = "data/netStats_f.RData")
 save(netStats.fCI, file = "data/netStats_f_CI.RData")
@@ -147,6 +339,19 @@ netStats.all <- do.call(rbind,
                                })
 )
 
+
+#Pairwise ttest for z score distributions
+spvf <- netStats.all %>% filter(trt != "sex")
+spvsex <- netStats.all %>% filter(trt != "f")
+pairwise.t.test(spvf$zrobustness.HL,spvf$trt,paired=T)
+pairwise.t.test(spvsex$zrobustness.LL,spvsex$trt,paired=T)
+
+#yea, the sex ones show a diff, and the f ones are close. so probs worth doing the full
+
+
+
+
+#plots
 ggplot(netStats.all, aes(x=pH2, color=trt)) +
   geom_density()
 
@@ -188,56 +393,56 @@ load("data/netStats_sex_CI.RData")
 
 
 netStatsCI.all <- do.call(rbind,
-                        lapply(names(netStats.fCI)[-c(116,179)],
-                               function (x) {
-                                 
-                                # browser()
-                                 
-                                 if(any(!is.na(netStatsCI.sex[[x]]))) {
-                                   fullSex.df <- as.data.frame(t(netStatsCI.sex[[x]]))
-                                   fullSex.df$site <- x
-                                   fullSex.df$trt <- "sex" 
-                                 } else {
-                                   fulls.df <- as.data.frame(t(netStatsCI.sex[[x]]))
-                                   rownames(fullSex.df) <- rownames(t(netStatsCI.sex[[1]]))
-                                   colnames(fullSex.df) <- colnames(t(netStatsCI.sex[[1]]))
-                                   fullSex.df$site <- x
-                                   fullSex.df$trt <- "sex"
-                                 }
-                                 
-                                 if(any(!is.na(netStats.fCI[[x]]))) {
-                                   fullf.df <- as.data.frame(t(netStats.fCI[[x]]))
-                                   fullf.df$site <- x
-                                   fullf.df$trt <- "f" 
-                                 } else {
-                                   fullf.df <- as.data.frame(t(netStats.fCI[[x]]))
-                                   rownames(fullf.df) <- rownames(t(netStatsCI.sex[[1]]))
-                                   colnames(fullf.df) <- colnames(t(netStatsCI.sex[[1]]))
-                                   fullf.df$site <- x
-                                   fullf.df$trt <- "f"
-                                 }
-                                 
-                                 if(any(!is.na(netStats.spCI[[x]]))) {
-                                   fullsp.df <- as.data.frame(t(netStats.spCI[[x]]))
-                                   fullsp.df$site <- x
-                                   fullsp.df$trt <- "sp" 
-                                 } else {
-                                   fullsp.df <- as.data.frame(t(netStats.spCI[[x]]))
-                                   rownames(fullsp.df) <- rownames(t(netStatsCI.sex[[1]]))
-                                   colnames(fullsp.df) <- colnames(t(netStatsCI.sex[[1]]))
-                                   fullsp.df$site <- x
-                                   fullsp.df$trt <- "sp"
-                                 }
-                                 
-                                 
-                                 all.df <- data.frame(rbind(fullSex.df,
-                                                            fullf.df,
-                                                            fullsp.df))
-                                 all.df$value <- rownames(all.df)
-                                 rownames(all.df) <- NULL
-                                 all.df$value <- rep(c("95L","95H","90L","90H","obs"))
-                                 return(all.df)
-                               })
+                          lapply(names(netStats.fCI)[-c(116,179)],
+                                 function (x) {
+                                   
+                                   # browser()
+                                   
+                                   if(any(!is.na(netStatsCI.sex[[x]]))) {
+                                     fullSex.df <- as.data.frame(t(netStatsCI.sex[[x]]))
+                                     fullSex.df$site <- x
+                                     fullSex.df$trt <- "sex" 
+                                   } else {
+                                     fulls.df <- as.data.frame(t(netStatsCI.sex[[x]]))
+                                     rownames(fullSex.df) <- rownames(t(netStatsCI.sex[[1]]))
+                                     colnames(fullSex.df) <- colnames(t(netStatsCI.sex[[1]]))
+                                     fullSex.df$site <- x
+                                     fullSex.df$trt <- "sex"
+                                   }
+                                   
+                                   if(any(!is.na(netStats.fCI[[x]]))) {
+                                     fullf.df <- as.data.frame(t(netStats.fCI[[x]]))
+                                     fullf.df$site <- x
+                                     fullf.df$trt <- "f" 
+                                   } else {
+                                     fullf.df <- as.data.frame(t(netStats.fCI[[x]]))
+                                     rownames(fullf.df) <- rownames(t(netStatsCI.sex[[1]]))
+                                     colnames(fullf.df) <- colnames(t(netStatsCI.sex[[1]]))
+                                     fullf.df$site <- x
+                                     fullf.df$trt <- "f"
+                                   }
+                                   
+                                   if(any(!is.na(netStats.spCI[[x]]))) {
+                                     fullsp.df <- as.data.frame(t(netStats.spCI[[x]]))
+                                     fullsp.df$site <- x
+                                     fullsp.df$trt <- "sp" 
+                                   } else {
+                                     fullsp.df <- as.data.frame(t(netStats.spCI[[x]]))
+                                     rownames(fullsp.df) <- rownames(t(netStatsCI.sex[[1]]))
+                                     colnames(fullsp.df) <- colnames(t(netStatsCI.sex[[1]]))
+                                     fullsp.df$site <- x
+                                     fullsp.df$trt <- "sp"
+                                   }
+                                   
+                                   
+                                   all.df <- data.frame(rbind(fullSex.df,
+                                                              fullf.df,
+                                                              fullsp.df))
+                                   all.df$value <- rownames(all.df)
+                                   rownames(all.df) <- NULL
+                                   all.df$value <- rep(c("95L","95H","90L","90H","obs"))
+                                   return(all.df)
+                                 })
 )
 
 
@@ -245,7 +450,7 @@ netsize.df <- as.data.frame(unique(netStatsCI.all$site))
 netsize.df$plants <- unlist(lapply(unique(netStatsCI.all$site), function(x){
   dimensions <- dim(nets.obs.sp[[x]])
   return(dimensions[1])
-  }))
+}))
 netsize.df$total <- unlist(lapply(unique(netStatsCI.all$site), function(x){
   dimensions <- dim(nets.obs.sp[[x]])
   return(sum(dimensions))
@@ -259,41 +464,88 @@ names(netStats) <- c(names(netStats)[1:13],"network",names(netStats)[15:18])
 netStats <- mutate(netStats, site = sub("\\.[0-9]+$", "", network))
 
 #subset down to the sites where at least one species showed 
+load("data/mix_netsYHS.RData")
 sexnetstats <- netStats[netStats$network %in% names(nets.mix.clean[[1]]),]
+
+save(sexnetstats,file="data/sexnetstats.RData")
+load("data/sexnetstats.RData")
+
+valueDF <- function(data, colname) {
+  nets <- lapply(unique(data$network), function(x){
+    net <- filter(data,network == x)
+    spobs <- net %>% filter(trt=="sp",value != "obs")
+    zero <- mean(spobs[,colname])
+    net$zeroed <- net[,colname] - zero
+    return(net[,c(14:18,20)])
+  })
+  return(do.call(rbind, nets))
+}
+
+robHL <- valueDF(sexnetstats,"robustness.HL") %>% 
+  filter(trt != "sex", value %in% c("obs","95H",'95L'))
+robHL$stat<-rep("robHL")
+
+
+vulnLL <- valueDF(sexnetstats,"vulnerability.LL") %>% 
+  filter(trt != "sex", value %in% c("obs","95H",'95L'))
+vulnLL$stat<-rep("vuln")
+
+
+rob_vul <- rbind(robHL,vulnLL)
+rob_vul$jit <- rep(0)
+
+ggplot(robHL) +
+  geom_line(aes(y=zeroed,x=network,col=trt),data = .%>% filter (value != "obs"),size = 2) +
+  
+  
+  ggplot(rob_vul) +
+  geom_line(aes(y=zeroed,x=network,col=trt),data = .%>% filter (value != "obs",trt=="sp")) +
+  geom_line(aes(y=zeroed,x=network,col=trt),data = .%>% filter (value != "obs",trt=="f"))+
+  facet_grid(cols = vars(stat))
+
++
+  geom_point(aes(x=zeroed,y=network,colour="green"),data = .%>% filter (value == "obs",trt=="f"))
+
+
+ggplot(rob_vul) +
+  geom_line(aes(y=zeroed,x=network,col=trt),data = .%>% filter (value != "obs")) +
+  geom_point(aes(x=zeroed,y=network,colour="green"),data = .%>% filter (value == "obs",trt=="f"))
+
+
 
 ### plot values (e.g., robustness) vs network size, look for interactions
 
 ggplot(sexnetstats)+
-#  geom_line(aes(x=robustness.HL, y=plants, color=trt),data= .%>% filter(value=="obs")) +
-  geom_point(aes(x=robustness.HL,y=site,color=trt),data= .%>% filter(value=="obs"))
-  #hard to see whats up
+  #  geom_line(aes(x=robustness.HL, y=plants, color=trt),data= .%>% filter(value=="obs")) +
+  geom_point(aes(x=robustness.HL,y=network,color=trt),data= .%>% filter(value=="obs")%>% filter(trt != "sex"))
+#hard to see whats up
 
 
 ### "test" mains as proportions of sites outside of CIs
 
 
 ### also test by just regressing the obs robustness (etc) by trt to look at whether there are overall trends
-  #could occur independently of whether too many are "significantly" diff from 
+#could occur independently of whether too many are "significantly" diff from 
 
 trt_rob.lm <- lm(robustness.HL~trt*plants,data=sexnetstats, subset = sexnetstats$value=="obs")
 summary(trt_rob.lm)
-  #sig; sex and sp seem to be larger than f
-  #no real strong effect of network size. very very slight negative relationship (which is sig though)
-  
-  #posthoc for sex vs sp
+#sig; sex and sp seem to be larger than f
+#no real strong effect of network size. very very slight negative relationship (which is sig though)
+
+#posthoc for sex vs sp
 trt_rob_sexsp.lm <- lm(robustness.HL~trt*plants,data=sexnetstats, subset = sexnetstats$value=="obs" & sexnetstats$trt!="f")
 summary(trt_rob_sexsp.lm)
-  #sp is marginally sig (0.09) smaller than sex. very little diff though
+#sp is marginally sig (0.09) smaller than sex. very little diff though
 
 #lmm w/ site
 trt_rob_site.lmm <- lme(robustness.HL~trt,data=sexnetstats, subset = sexnetstats$value=="obs", random=~1|site)
 summary(trt_rob_site.lmm)
-  #like... exactly the same as above
+#like... exactly the same as above
 
 #lmm w/ size?  
 trt_rob_size.lmm <- lme(robustness.HL~trt,data=sexnetstats, subset = sexnetstats$value=="obs", random=~1|plants)
 summary(trt_rob_size.lmm)
-  #also exactly the same as above. huh....?
+#also exactly the same as above. huh....?
 
 
 
@@ -330,7 +582,7 @@ CItest <- function(data, CI = "90", comp){
   
   nets <- do.call(rbind, nets)
   return(nets)
-
+  
 }
 
 test95 <- CItest(sexnetstats, CI="95",comp="sex")
@@ -343,38 +595,38 @@ sig.vec95
 #Woa, some interesting things in here. value = proportion of networks for which that value (e.g., connectance) was
 #either higher for the sex lvl networks (relative to sp lvl) or lower. 
 
-  #connectance was much more frequently lower for sex networks (2.7% higher vs 97% lower)
-    #Makes sense: you're adding new pol nodes, but keeping number of interactions the same
+#connectance was much more frequently lower for sex networks (2.7% higher vs 97% lower)
+#Makes sense: you're adding new pol nodes, but keeping number of interactions the same
 
-  #more compartments in sex networks (65% higher, 0.7% lower). 
-    #also makes sense for same reason as above
+#more compartments in sex networks (65% higher, 0.7% lower). 
+#also makes sense for same reason as above
 
-  #no strong trend for nestedness (47% higher, 28% lower)
+#no strong trend for nestedness (47% higher, 28% lower)
 
-  #NODF was much more frequently lower for sex networks (3.5% higher, 95% lower)
-    #??
+#NODF was much more frequently lower for sex networks (3.5% higher, 95% lower)
+#??
 
-  #H2 more frequently higher (81% vs 7%)
+#H2 more frequently higher (81% vs 7%)
 
-  #pollinator niche overlap was lower (3.5% vs 70% lower)
-    #again makes sense: you're dividing interactions into smaller sub-nodes, -> by numbers fewer "generalists" w/ overlap
+#pollinator niche overlap was lower (3.5% vs 70% lower)
+#again makes sense: you're dividing interactions into smaller sub-nodes, -> by numbers fewer "generalists" w/ overlap
 
-  #same story for plant niche overlap (0.4% vs 90% lower)
+#same story for plant niche overlap (0.4% vs 90% lower)
 
-  #Pollinator robustness was more often higher in sex networks (70% of networks showed higher vs 11$ lower)
-    #not sure exactly why
+#Pollinator robustness was more often higher in sex networks (70% of networks showed higher vs 11$ lower)
+#not sure exactly why
 
-  #plant robustness was much LOWER in sex networks (4.7% higher vs 93% of networks where it was lower)
-    #gotta think about why
+#plant robustness was much LOWER in sex networks (4.7% higher vs 93% of networks where it was lower)
+#gotta think about why
 
-  #fxn comp for polls: not too strong but seems lower: 20% higher vs 63$ lower
+#fxn comp for polls: not too strong but seems lower: 20% higher vs 63$ lower
 
-  #plant fxnal comp was lower: 12% higher, 79% lower
+#plant fxnal comp was lower: 12% higher, 79% lower
 
-  #generality was lower for sex networks: 1.6% higher vs 96% lower
-    #again, makes sense. splitting -> more "specialists"
+#generality was lower for sex networks: 1.6% higher vs 96% lower
+#again, makes sense. splitting -> more "specialists"
 
-  #plant vulnerability was definitely higher (97% vs 0.0000000%)
+#plant vulnerability was definitely higher (97% vs 0.0000000%)
 
 
 ### test interactions by regressing those proportions against size
@@ -581,8 +833,6 @@ meanObsDiffNet<-lapply(metric.net, function(x){
 
 plot(density(nullDistNets.df$robustness.HL,na.rm = T))
 abline(v=meanObsDiffNet[5])
-
-
 
 
 

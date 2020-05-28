@@ -5,6 +5,7 @@
 ## sites/years and prepare it for network analysis.
 
 dropNet <- function(z){
+  #removes networks that have too few dimensions to be used
   z[!sapply(z, FUN=function(q){
     any(dim(q) < 3)
   })]
@@ -57,6 +58,7 @@ breakNetMix <- function(spec.dat, site, year, mix){
   return(comms)
 }
 
+#NOT USED
 breakNetMixSpYr <- function(spec.dat, year, mix){
   ## puts data together in a list and removes empty matrices
   agg.spec <- aggregate(list(abund=spec.dat[,mix]),
@@ -173,6 +175,23 @@ calcSpec <- function(nets, indiv = 1, lvl = "SpSiteYr"){
   return(specs)
 }
 
+calcNets <- function(nets, metrics){
+  ## applies specieslevel from bipartite to networks
+  net.lev <- lapply(nets, function(x){
+    
+    #calculate values
+    sl <- networklevel(x, index=metrics)
+    
+    return(sl)
+  })
+  
+  ## extract the values and make a dataframe
+  stats <- as.data.frame(do.call(rbind, net.lev))
+  stats$SiteYr <- rownames(stats)
+  rownames(stats) <- NULL
+  return(stats)
+}
+
 
 ## extreact specialization scores from specieslevel function and
 ## return data frame
@@ -238,6 +257,7 @@ ran.sex <- function(spec.data){
   return(do.call(rbind, unlist(col.ls, recursive=FALSE)))
 }
 
+#NOT RUN
 ran.sex.SpYr <- function(spec.data){
   col.ls <- lapply(unique(spec.data$Year),function(x){
     net <- filter(spec.data,Year==x)
@@ -256,6 +276,8 @@ ran.sex.SpYr <- function(spec.data){
 
 
 ran.gen<-function(spec.data,iterations,cores, level="SpSiteYr"){
+  #generates simulated datasets by randomizing males and females within species
+  
   #setup: add column to actual observation df
   spec.data$MixSex<-spec.data$Sex
   spec.data$GenusSpeciesMix<-paste(spec.data$GenusSpecies,
@@ -298,7 +320,7 @@ ran.gen<-function(spec.data,iterations,cores, level="SpSiteYr"){
 
 
 calcMetric <- function(dat.web, index) {
-  ## calculates modularity
+  ## Calculates metrics from a list with the networklevel command
   dat.web <- as.matrix(empty(dat.web))
   mets <-  networklevel(dat.web, index=index)
   return(mets)
@@ -362,6 +384,8 @@ calcNetworkMetrics <- function (dat.web, N,
   return(rep(NA, (length(index) + 6)*3))
 }
 
+
+#NOT RUN
 calcNetworkMetricsCI <- function (dat.web, N, cLevels = c(0.95,0.9),
                                   index= c("mean number of links",
                                          "niche overlap",
@@ -516,7 +540,7 @@ makeComp <- function(data, metrics, comparison="log") {
   return(som)
 }
 
-calcNullProp50 <- function(data, metrics, zscore=TRUE) {
+calcNullProp50 <- function(data, metrics, zscore=TRUE,level ="species") {
   ## calculates the zscore of the observed difference between male and
   ## female pollinators of each species within the larger distribution
   ## of that difference across all iterations. Can alternatively give
@@ -526,9 +550,11 @@ calcNullProp50 <- function(data, metrics, zscore=TRUE) {
   sim.vec <- seq(1:length(data))
   named.ls <- mclapply(sim.vec, function(x) {
     data[[x]]$sim <- rep.int(x,times=length(data[[x]]$SiteYr))
-    data[[x]]$SpSiteYr <- paste(data[[x]]$species,
-                                data[[x]]$SiteYr,
-                                sep="_")
+    if(level=="species"){
+      data[[x]]$SpSiteYr <- paste(data[[x]]$species,
+                                  data[[x]]$SiteYr,
+                                  sep="_")
+    }
     return(data[[x]])
   },mc.cores=cores)
   
@@ -536,8 +562,13 @@ calcNullProp50 <- function(data, metrics, zscore=TRUE) {
   dist.df <- do.call(rbind, named.ls)
   
   #combine values for sp+yr+site
-  sigLevel <- mclapply(unique(dist.df$SpSiteYr), function(y) {
-    sp <- filter(dist.df, dist.df$SpSiteYr == y)
+  if(level == "species") {
+    col <- "SpSiteYr"
+  } else {
+    col <- "SiteYr"
+  }
+  sigLevel <- mclapply(unique(dist.df[,col]), function(y) {
+    sp <- filter(dist.df, dist.df[,col] == y)
     obs <- filter(sp, sp$sim == 1)
     
     #calculate the zscore of the observed difference, 
@@ -547,7 +578,7 @@ calcNullProp50 <- function(data, metrics, zscore=TRUE) {
         metZ <- (sp[1,z] - mean(sp[,z]))/
                  (sd(sp[,z])+10^-10)
       }else{
-        metprop <- (sum(sp[,z] < obs[,z]) + sum(sp[,z] == obs[,z])/2)  / length(sp$species)
+        metprop <- (sum(sp[,z] < obs[,z]) + sum(sp[,z] == obs[,z])/2)  / length(sp[,z])
       }
     })
     mets <- data.frame(t(unlist(mets)))
@@ -749,7 +780,7 @@ calcDistZ <- function(data, level, zscore = TRUE) {
   return(sig.dist)
 }
 
-
+#NOT RUN?
 simExtinction <- function(nets,
                           extinction.method,
                           spec,
@@ -777,12 +808,18 @@ simExtinction <- function(nets,
 
 
 
-
-
-
-
-
-
-
-sexExtinction(nets.mix.clean[[1]][[1]],participant = "higher", method = "abundance")
+#NOT RUN?
+traitFrame <- function(diffs, dist) {
+  #extract species from SpSiteYr
+  diffs %>%
+    mutate(GenusSpecies = gsub( "_.*$", "", SpSiteYr)) ->
+    diff1
+  
+  #add in distance index proportions, matching by SpSiteYr
+  diff1$distance <- dist$distanceZ[match(diff1$SpSiteYr,
+                                         dist$Level)]
+  res <- str_match(diff1$SpSiteYr, "_(.*?)_")
+  diff1$Site <- res[,2]
+  return(diff1)
+}
 

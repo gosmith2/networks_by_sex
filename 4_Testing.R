@@ -1,16 +1,19 @@
-## 4: Overall tests of network role differences
+## 4: Overall test of network role differences
 
+#Generates a test to summarize the number of networks where sex
+#associated differences are larger than the null expectation. 
 
-pb_download("zscore50_2.RData",
+#Setup: Download and attach data, specify metrics to test
+pb_download("zscore50_5.RData",
             dest="data",
             tag="data.v.1")
 
-pb_download("sexDiffsProp50YH_20.Rdata",
+pb_download("sexDiffsProp50_5.Rdata",
             dest="data",
             tag="data.v.1")
 
-load("data/zscore50_2.RData")
-load("data/sexDiffsProp50YH_20.Rdata")
+load("data/zscore50_5.RData")
+load("data/sexDiffsProp50_5.Rdata")
 
 metric.ls <- c("degree","species.strength","weighted.betweenness",
                "weighted.closeness","d")
@@ -23,13 +26,26 @@ metric.ls <- c("degree","species.strength","weighted.betweenness",
 ## difference diverged from null expectations more than some threshold 
 ## (with the specific threshold used based on the tails of the test)
 
+
+overallTest(sexDiffsProp50_5.df, metric.ls, tails=2, zscore=F)
+
+
+
+
+
+######-------------------------------
+
+# - Alternative code that will be removed before pub
+
+######-------------------------------
+
 overallTest(sexDiffsProp50_2.df, metric.ls, tails=1, zscore=F)
 overallTest(sexDiffsProp50_3.df, metric.ls, tails=1, zscore=F)
-overallTest(sexDiffsProp50_5.df, metric.ls, tails=1, zscore=F)
 overallTest(sexDiffsProp50_10.df, metric.ls, tails=1, zscore=F)
 overallTest(sexDiffsProp50_20.df, metric.ls, tails=1, zscore=F)
 
-#e.g., in ____ % of observations, ___. 
+
+
 
 overallTest(zscore50_2.df, metric.ls, zscore=T)
 
@@ -39,11 +55,14 @@ overallTest(zscore50_2.df, metric.ls, zscore=T, tails=-1)
 
 
 #splevel
-spLevelTest(zscore50_2.df,metric.ls,zscore=T)
+spLevelTest(zscore50_5.df,metric.ls,zscore=T)
 #results: tons of zeros
 
 #familylevel
 spLevelTest(sexDiffsProp50_5.df,metric.ls,zscore=F,level="Family")
+
+
+
 
 
 sexDiffsProp50_2.df %>%
@@ -52,7 +71,6 @@ sexDiffsProp50_2.df %>%
 
 zscore50_2.df %>%
   mutate(Sp = gsub( "_.*$", "", SpSiteYr))
-
 
 
 
@@ -74,36 +92,6 @@ abline(v=0)
 
 plot(density(zscore50_2.df$d, na.rm = T))
 abline(v=0)
-
-
-#regress amt of difference against absolute specialization?
-#i.e, are more generalized sp more different b/w males and females?
-
-
-
-
-
-
-##
-#----------Roswell paper notes
-
-#6 meadow sites, sampling at minimum 6 30-mintue sampling periods
-  #for 3 days
-  #5 rounds throughout the summer each
-
-#Do males and females overlap in diet?
-  #permuted bee sex in the visitation record
-  #9999 iterations: this many reqed to stabilize for 0.05 alpha
-    #based on North, Curtis, and Sham 2002
-  #)"When the observed dissimilarity was greater than 9500
-    #of the 9999 simulated dissimilarities, we concluded that
-    #we had detected a difference in the pattern of floral
-    #visitation between conspecific male and female bees, 
-    #given the observed diet breadth and abundance of each sex.
-  #dissimilarity calculated using: Morisita-Horn index
-    #good for mixed-size and small sample data
-  #comparison at the SPECIES level, across all sites and 
-    #sample rounds (several w/in 2016)
 
 
 

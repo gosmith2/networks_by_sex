@@ -7,15 +7,20 @@
 ## setwd("~/Dropbox/networks_by_sex")
 
 rm(list=ls())
-library(piggyback) #
-library(bipartite) #
-library(tidyverse) #
-library(parallel) #
+library(piggyback) 
+library(bipartite)
+library(tidyverse) 
+library(parallel) 
+library(vegan)
 library(stringr)
 library(nlme)
+library(fossil)
 
 source('prepNets.R')
 source('misc.R')
+
+
+#----Download datasets
 
 #Sys.getenv("GITHUB_PAT")
 pb_download("specimens-yos.csv",
@@ -40,7 +45,6 @@ spec.y <-read.csv("data/specimens-yos.csv")
 spec.y <- spec.y[spec.y$NetPan == "net",]
 
 ## drop extra round at L21 when field crew did not sample correctly
-# from specimens
 extra.round <- spec.y$Site == 'L21' & spec.y$Date == '2014-07-01'
 spec.y <- spec.y[!extra.round,]
 
@@ -61,6 +65,7 @@ spec.y$GenusSpeciesSex<-ifelse(spec.y$Sex %in% c("m","f"),
                                paste(spec.y$GenusSpecies,
                                      "e",sep="_")
 )
+## add a column combining sites and years
 spec.y$SiteYr <- paste(spec.y$Site,spec.y$Year)
 
 
@@ -69,7 +74,7 @@ spec.y$SiteYr <- paste(spec.y$Site,spec.y$Year)
 ####--------------------------####
 
 load("data/specimens-hr.RData",verbose=TRUE)
-#For whatever reason, resulting df is called "dd"
+#resulting df is called "dd"
 spec.h <- dd
 
 
@@ -93,6 +98,8 @@ spec.h$GenusSpeciesSex <- ifelse(spec.h$Sex %in% c("m","f"),
                                  paste(spec.h$GenusSpecies,
                                        "e",sep="_")
 )
+
+## add a column combining sites and years
 spec.h$SiteYr <- paste(spec.h$Site,spec.h$Year)
 
 ####--------------------------####
@@ -114,6 +121,8 @@ spec.s$GenusSpeciesSex <- ifelse(spec.s$Sex %in% c("m","f"),
                                  paste(spec.s$GenusSpecies,
                                        "e",sep="_")
 )
+
+## add a column combining sites and years
 spec.s$SiteYr <- paste(spec.s$Site,spec.s$Year)
 
 
@@ -135,9 +144,6 @@ keeps <- c("UniqueID",
 bind_rows(select(spec.y,keeps),
           select(spec.h,keeps),
           select(spec.s,keeps)) -> spec.all
-
-#SI only
-spec.SI<-select(spec.s,keeps)
 
 #save compiled dataset, upload to release
 save(spec.all,file='data/spec.all.RData')
