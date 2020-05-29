@@ -31,7 +31,7 @@ pb_download("specimens-hr.RData",
             dest="data",
             tag="data.v.1")
 
-pb_download("specimens-si.RData",
+pb_download("specimens-si.csv",
             dest="data",
             tag="data.v.1")
 
@@ -106,21 +106,31 @@ spec.h$SiteYr <- paste(spec.h$Site,spec.h$Year)
 #### Sky Islands
 ####--------------------------####
 
-load("data/specimens-si.RData",verbose=TRUE)
-
-spec.s <- spec
+spec.s <- read.csv("data/specimens-si.csv")
 
 spec.s <- spec.s[spec.s$Family %in% c("Andrenidae", "Apidae",
                                       "Colletidae", "Halictidae",
                                       "Megachilidae", "Syrphidae"),]
+
+## drop pan data
+spec.s <- spec.s[spec.s$Method == "Net",]
+
+#combine plant and pollinator names into single columns
+spec.s$PlantGenusSpecies <- paste(spec.s$PlantGenus,spec.s$PlantSpecies," ")
+spec.s$GenusSpecies <- paste(spec.s$Genus,spec.s$Species," ")
+
+#remove blanks
 spec.s <- dat.rm.blanks(spec.s)
 
+#add some more necessary columns
 spec.s$GenusSpeciesSex <- ifelse(spec.s$Sex %in% c("m","f"),
                                  paste(spec.s$GenusSpecies,
                                        spec.s$Sex,sep="_"),
                                  paste(spec.s$GenusSpecies,
                                        "e",sep="_")
 )
+
+spec.s$Year <- as.numeric(paste0("20",str_sub(spec.s$Date,-2)))
 
 ## add a column combining sites and years
 spec.s$SiteYr <- paste(spec.s$Site,spec.s$Year)
@@ -143,11 +153,11 @@ keeps <- c("UniqueID",
 #all sites
 bind_rows(select(spec.y,keeps),
           select(spec.h,keeps),
-          select(spec.s,keeps)) -> spec.all
+          select(spec.s,keeps)) -> spec_all
 
 #save compiled dataset, upload to release
-save(spec.all,file='data/spec.all.RData')
+save(spec_all,file='data/spec_all.RData')
 
-pb_upload("data/spec.all.RData",
-          name="spec.all.RData",
+pb_upload("data/spec_all.RData",
+          name="spec_all.RData",
           tag="data.v.1")
