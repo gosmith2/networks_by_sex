@@ -15,11 +15,11 @@
 
 ## setwd("~/Dropbox/networks_by_sex")
 
-pb_download("spec.all.RData",
+pb_download("spec_all.RData",
             dest="data",
             tag="data.v.1")
 
-load("data/spec.all.RData")
+load("data/spec_all.RData")
 
 ####-------------------------------------------####
 #### Randomizing males and females for analyses
@@ -29,9 +29,6 @@ load("data/spec.all.RData")
 ## It is currently written to be processed by 10 cores
 ## via the function mclapply. 
 
-pb_download("spec.all.RData",
-          dest="data",
-          tag="data.v.1")
 
 ## cores should be 3 for bombus, 10 for osmia
 cores <- 10
@@ -39,9 +36,9 @@ cores <- 10
 ## randomize the sexes w/in species w/in sites. observed data is
 ## element 1 of the resulting list, randomized are elements 2-1000
 
-rand_sexes <- ran.gen(spec.all, 999, cores)
+rand_sexes <- ran.gen(spec_all, 999, cores)
 
-save(rand_sexes,"data/rand_sexes.RData")
+save(rand_sexes,file="data/rand_sexes.RData")
 
 
 
@@ -68,6 +65,9 @@ save(nets_mix_clean, file = 'data/nets_mix_clean.Rdata')
 pb_upload("data/nets_mix_clean.RData",
           name="nets_mix_clean.RData",
           )
+pb_download('nets_mix_clean.RData',
+            dest='data',
+            tag="data.v.1")
 
 ####-------------------------------------------####
 #### Calculate node-level network parameters
@@ -82,8 +82,8 @@ sex_trts_mix5 <- mclapply(nets_mix_clean,
 
 
 ## confirm that the values are different
-ifelse(any(sex.trts.mix5[[1]]$species.strength!=
-             sex.trts.mix5[[2]]$species.strength),
+ifelse(any(sex_trts_mix5[[1]]$species.strength!=
+             sex_trts_mix5[[2]]$species.strength),
        print("SUCCESS: the network statistics are different between randomizations"),
        print("WARNING: the network statistics may be not different between randomizations")
 )

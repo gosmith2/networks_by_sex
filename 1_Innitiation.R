@@ -15,6 +15,7 @@ library(vegan)
 library(stringr)
 library(nlme)
 library(fossil)
+library(reshape2)
 
 source('prepNets.R')
 source('misc.R')
