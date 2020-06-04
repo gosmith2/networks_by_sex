@@ -1,4 +1,4 @@
-## 5: Dissimilarity indexing
+## 4: Dissimilarity indexing
 
 ## Loads networks and calculates the Morisita-Horn dissimilarity
 ## index for males and females within each species within each network.
@@ -6,10 +6,19 @@
 ## the null is calculated. 
 
 #Load clean networks
+pb_download('nets_mix_clean.RData',
+            dest="data",
+            tag="data.v.1")
+
 load("data/nets_mix_clean.Rdata")
 
 #calculate the M-H index for species with at least 5 males and 5 females
 distValues5.df <- distComp(nets_mix_clean,"horn",indiv=5)
+
+#add siteyr column, remove NAs from sites that did not have species with the 
+#minimum abundances
+distValues5.df$SpSiteYr <- paste(distValues5.df$GenusSpecies,distValues5.df$SiteYr)
+distValues5.df <- filter(distValues5.df,distance!='NA')
 
 #distValues5obs.df<-subset(distValues5.df,distValues5.df$sim==1)
 
@@ -28,6 +37,7 @@ pb_download("distValues5.RData",
 
 #compare observed M-H distances to simulated null networks
 diffDist5 <- calcDistZ(distValues5.df,"SpSiteYr",zscore=F)
+
 
 #calculate again to generate z-scores for plotting
 diffDist5Zscore <- calcDistZ(distValues5.df,"SpSiteYr",zscore=T)

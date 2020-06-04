@@ -4,14 +4,66 @@
 ## the purpose of this function is to break up data with many
 ## sites/years and prepare it for network analysis.
 
-dropNet <- function(z){
-  #removes networks that have too few dimensions to be used
-  z[!sapply(z, FUN=function(q){
-    any(dim(q) < 3)
-  })]
+#dropNet <- function(z){
+#  #removes networks that have too few dimensions to be used
+#  z[!sapply(z, FUN=function(q){
+#    any(dim(q) < 3)
+#  })]
+#}
+#NOT USED?
+
+fix.white.space <- function(d) {
+  d <- as.character(d)
+  remove.first <- function(s) substr(s, 2, nchar(s))
+  d <- gsub("      ", " ", d, fixed=TRUE)
+  d <- gsub("     ", " ", d, fixed=TRUE)
+  d <- gsub("    ", " ", d, fixed=TRUE)
+  d <- gsub("   ", " ", d, fixed=TRUE)
+  d <- gsub("  ", " ", d, fixed=TRUE)
+  
+  tmp <- strsplit(as.character(d), " ")
+  d <- sapply(tmp, function(x) paste(x, collapse=" "))
+  
+  first <- substr(d, 1, 1)
+  d[first==" "] <- remove.first(d[first==" "])
+  d
 }
 
+dat.clean <- function(spec.dat) {
+  spec.dat$GenusSpecies <- fix.white.space(paste(spec.dat$Genus,
+                                                 spec.dat$Species,
+                                                 spec.dat$SubSpecies))
+  
+  spec.dat$PlantGenusSpecies <-  fix.white.space(paste(spec.dat$PlantGenus,
+                                                       spec.dat$PlantSpecies,
+                                                       spec.dat$PlantVar,
+                                                       spec.dat$PlantSubSpecies))
+  
+  spec.dat$Int <-  fix.white.space(paste(spec.dat$GenusSpecies,
+                                         spec.dat$PlantGenusSpecies))
+  spec.dat$IntGen <-  fix.white.space(paste(spec.dat$Genus,
+                                            spec.dat$PlantGenus))
+  return(spec.dat)
+}
 
+dat.dates <- function(spec.dat) {
+  spec.dat$Date <- as.Date(spec.dat$Date, format='%m/%d/%y')
+  spec.dat$Doy <- as.numeric(strftime(spec.dat$Date, format='%j'))
+  spec.dat$Year <- as.numeric(format(spec.dat$Date,'%Y'))
+  return(spec.dat)
+}
+
+dat.rm.blanks <- function(spec.dat) {
+  spec.dat <- spec.dat[spec.dat$PlantGenusSpecies != "",]
+  spec.dat <- spec.dat[spec.dat$GenusSpecies != "",]
+  return(spec.dat)
+}
+
+samp2site.spp <- function(site, spp, abund, FUN=mean) {
+  x <- tapply(abund, list(site = site, spp = spp), FUN)
+  x[is.na(x)] <- 0
+  return(x)
+}
 
 breakNet <- function(spec.dat, site, year){
   ## puts data together in a list and removes empty matrices
@@ -59,69 +111,74 @@ breakNetMix <- function(spec.dat, site, year, mix){
 }
 
 #NOT USED
-breakNetMixSpYr <- function(spec.dat, year, mix){
-  ## puts data together in a list and removes empty matrices
-  agg.spec <- aggregate(list(abund=spec.dat[,mix]),
-                        list(GenusSpeciesMix=spec.dat[,mix],
-                             Year=spec.dat[,year],
-                             PlantGenusSpecies=
-                               spec.dat$PlantGenusSpecies),
-                        length)
-  networks <- split(agg.spec, agg.spec[,year])
-  ## formats data matrices appropriate for network analysis
-  ## formats data matrices appropriate for network analysis
-  vec <- 1:length(networks)
-  comms <- lapply(names(networks), function(y){
-    net <- samp2site.spp(site=networks[y][[y]]$PlantGenusSpecies,
-                  spp=networks[y][[y]]$GenusSpeciesMix,
-                  abund=networks[y][[y]]$abund)
-  })
-  
-  return(comms)
-}
+#breakNetMixSpYr <- function(spec.dat, year, mix){
+#  ## puts data together in a list and removes empty matrices
+#  agg.spec <- aggregate(list(abund=spec.dat[,mix]),
+#                        list(GenusSpeciesMix=spec.dat[,mix],
+#                             Year=spec.dat[,year],
+#                             PlantGenusSpecies=
+#                               spec.dat$PlantGenusSpecies),
+#                        length)
+#  networks <- split(agg.spec, agg.spec[,year])
+#  ## formats data matrices appropriate for network analysis
+#  ## formats data matrices appropriate for network analysis
+#  vec <- 1:length(networks)
+#  comms <- lapply(names(networks), function(y){
+#    net <- samp2site.spp(site=networks[y][[y]]$PlantGenusSpecies,
+#                  spp=networks[y][[y]]$GenusSpeciesMix,
+#                  abund=networks[y][[y]]$abund)
+#  })
+#  
+#  return(comms)
+#}
 
 
-getSpecies <- function(networks, FUN){
-  species.site <- lapply(networks, FUN)
-  site.plant <- rep(names(species.site), lapply(species.site, length))
-  species <- data.frame(species=do.call(c, species.site),
-                        siteStatus=site.plant,
-                        site= sapply(strsplit(site.plant, "_"),
-                                     function(x) x[1]),
-                        status= sapply(strsplit(site.plant, "_"),
-                                       function(x) x[2]))
-  return(species)
-}
+#getSpecies <- function(networks, FUN){
+#  species.site <- lapply(networks, FUN)
+#  site.plant <- rep(names(species.site), lapply(species.site, length))
+#  species <- data.frame(species=do.call(c, species.site),
+#                        siteStatus=site.plant,
+#                        site= sapply(strsplit(site.plant, "_"),
+#                                     function(x) x[1]),
+#                        status= sapply(strsplit(site.plant, "_"),
+#                                       function(x) x[2]))
+#  return(species)
+#}
+#NOT USED?
 
 
 
 ## calculates the degree of species in a network
-getDegree <- function(x, MARGIN){
-  apply(x, MARGIN, function(y){
-    length(y[y != 0])/length(y)
-  })
-}
+#getDegree <- function(x, MARGIN){
+#  apply(x, MARGIN, function(y){
+#    length(y[y != 0])/length(y)
+#  })
+#}
+#NOT USED?
+
 
 ## calculate various stats
-calcStats <- function(x){
-  means=mean(x)
-  medians=median(x)
-  mins <- min(x)
-  maxs <- max(x)
-  sds <- sd(x)
-  return(c(mean=means,
-           median=medians,
-           min=mins,
-           max=maxs,
-           sd=sds))
-}
+#calcStats <- function(x){
+#  means=mean(x)
+#  medians=median(x)
+#  mins <- min(x)
+#  maxs <- max(x)
+#  sds <- sd(x)
+#  return(c(mean=means,
+#           median=medians,
+#           min=mins,
+#           max=maxs,
+#           sd=sds))
+#}
+#NOT USED?
 
 
 
 ## number of species that interact
-getCon <- function(x, INDEX){
-  apply(x, INDEX, function(y) sum(y > 0))
-}
+#getCon <- function(x, INDEX){
+#  apply(x, INDEX, function(y) sum(y > 0))
+#}
+#NOT USED?
 
 ## calculates the species roles from a network and returns a dataframe
 ## with site status and ypr
@@ -209,36 +266,39 @@ getSpec <- function(species.lev, names.net, seps="_"){
   return(all.pp)
 }
 
-getSpecSpYr <- function(species.lev, names.net, seps="_"){
-  browser()
-  n.pp <- sapply(species.lev, nrow)
-  pp <- c(unlist(sapply(species.lev, rownames)))
-  names(pp) <- NULL
-  all.pp <- do.call(rbind, species.lev)
-  rownames(all.pp) <- NULL
-  try(all.pp$GenusSpecies <- pp)
-  all.pp$speciesType <- c(rep("pollinator", n.pp[1]),
-                          rep("plant", n.pp[2]))
-  all.pp$Year <- strsplit(names.net, seps)[[1]][1]
-  return(all.pp)
-}
+#getSpecSpYr <- function(species.lev, names.net, seps="_"){
+#  browser()
+#  n.pp <- sapply(species.lev, nrow)
+#  pp <- c(unlist(sapply(species.lev, rownames)))
+#  names(pp) <- NULL
+#  all.pp <- do.call(rbind, species.lev)
+#  rownames(all.pp) <- NULL
+#  try(all.pp$GenusSpecies <- pp)
+#  all.pp$speciesType <- c(rep("pollinator", n.pp[1]),
+#                          rep("plant", n.pp[2]))
+#  all.pp$Year <- strsplit(names.net, seps)[[1]][1]
+#  return(all.pp)
+#}
+#NOT USED?
 
 
 #build a large heirarcical list of networks where sex is randomized
 
 
-removeNets <- function(spec.data) {
-  #narrows down to each site+year combo, then only keeps the networks
-  #where at least 1 species has both sexes present
-  col.ls <- lapply(unique(spec.data$SiteYr),function(x){
-    if(length(unique(spec.data$GenusSpeciesSex[spec.data$SiteYr==x]))
-       >
-       length(unique(spec.data$GenusSpecies[spec.data$SiteYr==x]))){
-      filter(spec.data,SiteYr==x)
-  }})
-  col.ls <- col.ls[!sapply(col.ls, is.null)]
-  return(do.call(rbind, col.ls))
-}
+#removeNets <- function(spec.data) {
+#  #narrows down to each site+year combo, then only keeps the networks
+#  #where at least 1 species has both sexes present
+#  col.ls <- lapply(unique(spec.data$SiteYr),function(x){
+#    if(length(unique(spec.data$GenusSpeciesSex[spec.data$SiteYr==x]))
+#       >
+#       length(unique(spec.data$GenusSpecies[spec.data$SiteYr==x]))){
+#      filter(spec.data,SiteYr==x)
+#  }})
+#  col.ls <- col.ls[!sapply(col.ls, is.null)]
+#  return(do.call(rbind, col.ls))
+#}
+#NOT USED?
+
 
 #this one without the network remove code that I put into removeNets
 ran.sex <- function(spec.data){
@@ -258,21 +318,21 @@ ran.sex <- function(spec.data){
 }
 
 #NOT RUN
-ran.sex.SpYr <- function(spec.data){
-  col.ls <- lapply(unique(spec.data$Year),function(x){
-    net <- filter(spec.data,Year==x)
-    sp.mix.col <-lapply(unique(net$GenusSpecies), function(y){
-      sp<-filter(net,net$GenusSpecies==y)
-      if(length(unique(sp$Sex)) != 1){
-        sp$MixSex<-sample(sp$Sex,replace=FALSE)
-      }else{
-        sp$MixSex <- sp$Sex
-      }
-      return(sp)
-    })
-  })
-  return(do.call(rbind, unlist(col.ls, recursive=FALSE)))
-}
+#ran.sex.SpYr <- function(spec.data){
+#  col.ls <- lapply(unique(spec.data$Year),function(x){
+#    net <- filter(spec.data,Year==x)
+#    sp.mix.col <-lapply(unique(net$GenusSpecies), function(y){
+#      sp<-filter(net,net$GenusSpecies==y)
+#      if(length(unique(sp$Sex)) != 1){
+#        sp$MixSex<-sample(sp$Sex,replace=FALSE)
+#      }else{
+#        sp$MixSex <- sp$Sex
+#      }
+#      return(sp)
+#    })
+#  })
+#  return(do.call(rbind, unlist(col.ls, recursive=FALSE)))
+#}
 
 
 ran.gen<-function(spec.data,iterations,cores, level="SpSiteYr"){
@@ -319,12 +379,13 @@ ran.gen<-function(spec.data,iterations,cores, level="SpSiteYr"){
 }
 
 
-calcMetric <- function(dat.web, index) {
-  ## Calculates metrics from a list with the networklevel command
-  dat.web <- as.matrix(empty(dat.web))
-  mets <-  networklevel(dat.web, index=index)
-  return(mets)
-}
+#calcMetric <- function(dat.web, index) {
+#  ## Calculates metrics from a list with the networklevel command
+#  dat.web <- as.matrix(empty(dat.web))
+#  mets <-  networklevel(dat.web, index=index)
+#  return(mets)
+#}
+#NOT RUN?
 
 
 ## function to simulate 1 null, and calculate statistics on it
@@ -386,72 +447,73 @@ calcNetworkMetrics <- function (dat.web, N,
 
 
 #NOT RUN
-calcNetworkMetricsCI <- function (dat.web, N, cLevels = c(0.95,0.9),
-                                  index= c("mean number of links",
-                                         "niche overlap",
-                                         "fc")) {
-  ## calculate confidence intervals
-  ci <- function(stats, nnull) {
-    mean <- mean(stats, na.rm = T)
-    sd <- sd(stats, na.rm = T)
-    intervals <- lapply(cLevels,function(x){
-      conf <- qt(x,df=nnull)*sd/sqrt(nnull+1)
-      low <- mean - conf
-      high <- mean + conf
-      df <- data.frame(low,high)
-      colnames(df) <- c(paste(x, "low", sep = "_"),paste(x, "high", sep = "_"))
-      return(df)
-      })
-    
-    interval.df <- do.call(cbind,intervals)
-    return(interval.df)
-  }
-  
-  ## check that matrix is proper format (no empty row/col and no NAs)
-  if(all(is.na(dat.web) == FALSE)) {
-    ## drop empty rows and columns
-    dat.web <- as.matrix(empty(dat.web))
-    ## check to make sure emptied matrix is large enough
-    ## to calculate statistics on
-    if(is.matrix(dat.web)){
-      if(all(dim(dat.web) >= 2)) {
-        ## calculate null metrics
-        null.stat <- replicate(N,
-                               calcNullStat(dat.web,
-                                            null.fun= vaznull.fast,
-                                            index=index),
-                               simplify=TRUE)
-        ## calculate metrics from data
-        true.stat <- calcMetric(dat.web,
-                                index=index)
-        out.mets <- cbind(true.stat, null.stat)
-        rowSeq <- seq(1:nrow(out.mets))
-        ciValues <- lapply(rowSeq, function(x){
-          row <- out.mets[x,]
-          rowCI <- ci(row,N)
-          return(rowCI)
-        })
-        ciValues <- do.call(rbind,ciValues)
-        ciValues$true <- true.stat 
-        rownames(ciValues) <- names(true.stat)
-        return(ciValues)
-      }
-    }
-  }
-  return(matrix(nrow=length(index)+4,ncol=(2*length(cLevels))+1))
-}
+#calcNetworkMetricsCI <- function (dat.web, N, cLevels = c(0.95,0.9),
+#                                  index= c("mean number of links",
+#                                         "niche overlap",
+#                                         "fc")) {
+#  ## calculate confidence intervals
+#  ci <- function(stats, nnull) {
+#    mean <- mean(stats, na.rm = T)
+#    sd <- sd(stats, na.rm = T)
+#    intervals <- lapply(cLevels,function(x){
+#      conf <- qt(x,df=nnull)*sd/sqrt(nnull+1)
+#      low <- mean - conf
+#      high <- mean + conf
+#      df <- data.frame(low,high)
+#      colnames(df) <- c(paste(x, "low", sep = "_"),paste(x, "high", sep = "_"))
+#      return(df)
+#      })
+#    
+#    interval.df <- do.call(cbind,intervals)
+#    return(interval.df)
+#  }
+#  
+#  ## check that matrix is proper format (no empty row/col and no NAs)
+#  if(all(is.na(dat.web) == FALSE)) {
+#    ## drop empty rows and columns
+#    dat.web <- as.matrix(empty(dat.web))
+#    ## check to make sure emptied matrix is large enough
+#    ## to calculate statistics on
+#    if(is.matrix(dat.web)){
+#      if(all(dim(dat.web) >= 2)) {
+#        ## calculate null metrics
+#        null.stat <- replicate(N,
+#                               calcNullStat(dat.web,
+#                                            null.fun= vaznull.fast,
+#                                            index=index),
+#                               simplify=TRUE)
+#        ## calculate metrics from data
+#        true.stat <- calcMetric(dat.web,
+#                                index=index)
+#        out.mets <- cbind(true.stat, null.stat)
+#        rowSeq <- seq(1:nrow(out.mets))
+#        ciValues <- lapply(rowSeq, function(x){
+#          row <- out.mets[x,]
+#          rowCI <- ci(row,N)
+#          return(rowCI)
+#        })
+#        ciValues <- do.call(rbind,ciValues)
+#        ciValues$true <- true.stat 
+#        rownames(ciValues) <- names(true.stat)
+#        return(ciValues)
+#      }
+#    }
+#  }
+#  return(matrix(nrow=length(index)+4,ncol=(2*length(cLevels))+1))
+#}
 
-prepDat <- function(cor.stats, spec.dat){
-  dats <- do.call(rbind, cor.stats)
-  out <- data.frame(dats)
-  out$Site <- sapply(strsplit(names(cor.stats), "\\."),
-                     function(x) x[1])
-  out$Date <-  sapply(strsplit(names(cor.stats), "\\."),
-                      function(x) x[2])
-  out$Year <- format(as.Date(out$Date), "%Y")
-  rownames(out) <- NULL
-  return(out)
-}
+#prepDat <- function(cor.stats, spec.dat){
+#  dats <- do.call(rbind, cor.stats)
+#  out <- data.frame(dats)
+#  out$Site <- sapply(strsplit(names(cor.stats), "\\."),
+#                     function(x) x[1])
+#  out$Date <-  sapply(strsplit(names(cor.stats), "\\."),
+#                      function(x) x[2])
+#  out$Year <- format(as.Date(out$Date), "%Y")
+#  rownames(out) <- NULL
+#  return(out)
+#}
+#NOT USED?
 
 vaznull.fast <- function(web) {
   rs.p <- rowSums(web)/sum(web)
@@ -493,6 +555,7 @@ vaznull.fast <- function(web) {
   }
   finalmat
 }
+
 
 makeComp <- function(data, metrics, comparison="log") {
   ## takes the sex-level network traits of the pollinators and calculates
@@ -642,47 +705,49 @@ spLevelTest <- function(prop.dist, metrics,zscore=TRUE, tails=1,level="GenusSpec
   spp.sig <- do.call(rbind,spp)
   return(spp.sig)
 }
+#May not use; not in core code
 
-genNullDist <- function(data, metrics, mean.by="SpSiteYr",zscore=TRUE) {
-  
-  #give each element of the long list a unique number
-  sim.vec <- seq(1:length(data))
-  named.ls <- mclapply(sim.vec, function(x) {
-    data[[x]]$sim <- rep.int(x,times=length(data[[x]]$SiteYr))
-    data[[x]]$SpSiteYr <- paste(data[[x]]$species,data[[x]]$SiteYr,sep="_")
-    return(data[[x]])
-  },mc.cores=cores)
-  
-  #combine all the simulation iterations together into single element
-  dist.df <- do.call(rbind, named.ls)
-  
-  #extract an average value w/in each [mean.by] (e.g., mean.by="sim" 
-  #would calculate a single mean value w/in each simulation across sites
-  dist.build <- mclapply(unique(dist.df[,mean.by]), function(y) {
-    net <- filter(dist.df, dist.df[,mean.by] == y)
-    obs <- filter(net, net$sim == 1)
-    
-    #calculate the proportion of simulations <= observed
-    mets <- lapply(metrics, function(z) {
-      if (zscore == TRUE){
-        z.dist <- scale(net[,z],center=T,scale=T)
-        exp.obs <- z.dist[1,]
-      }else{
-        mean.value <- mean(net[,z],na.rm=T)
-        exp.obs <- mean.value - obs[,z]
-      }
-      return(exp.obs)
-    })
-    mets <- data.frame(mets)
-    colnames(mets) <- metrics
-    mets$mean.by <- y
-    return(mets)
-  },mc.cores=cores)
-  
-  #bind these all together
-  sig.dist <- do.call(rbind,dist.build)
-  return(sig.dist)
-}
+#genNullDist <- function(data, metrics, mean.by="SpSiteYr",zscore=TRUE) {
+#  
+#  #give each element of the long list a unique number
+#  sim.vec <- seq(1:length(data))
+#  named.ls <- mclapply(sim.vec, function(x) {
+#    data[[x]]$sim <- rep.int(x,times=length(data[[x]]$SiteYr))
+#    data[[x]]$SpSiteYr <- paste(data[[x]]$species,data[[x]]$SiteYr,sep="_")
+#    return(data[[x]])
+#  },mc.cores=cores)
+#  
+#  #combine all the simulation iterations together into single element
+#  dist.df <- do.call(rbind, named.ls)
+#  
+#  #extract an average value w/in each [mean.by] (e.g., mean.by="sim" 
+#  #would calculate a single mean value w/in each simulation across sites
+#  dist.build <- mclapply(unique(dist.df[,mean.by]), function(y) {
+#    net <- filter(dist.df, dist.df[,mean.by] == y)
+#    obs <- filter(net, net$sim == 1)
+#    
+#    #calculate the proportion of simulations <= observed
+#    mets <- lapply(metrics, function(z) {
+#      if (zscore == TRUE){
+#        z.dist <- scale(net[,z],center=T,scale=T)
+#        exp.obs <- z.dist[1,]
+#      }else{
+#        mean.value <- mean(net[,z],na.rm=T)
+#        exp.obs <- mean.value - obs[,z]
+#      }
+#      return(exp.obs)
+#    })
+#    mets <- data.frame(mets)
+#    colnames(mets) <- metrics
+#    mets$mean.by <- y
+#    return(mets)
+#  },mc.cores=cores)
+#  
+#  #bind these all together
+#  sig.dist <- do.call(rbind,dist.build)
+#  return(sig.dist)
+#}
+#NOT USED?
 
 distComp <- function(dataset, compMethod, indiv = 1) {
   #narrow down to each randomized simulation
@@ -781,34 +846,33 @@ calcDistZ <- function(data, level, zscore = TRUE) {
 }
 
 #NOT RUN?
-simExtinction <- function(nets,
-                          extinction.method,
-                          spec,
-                          partic="lower"){
-  #nets = network list object; extinction.method = "abundance", "degree", or "random" 
-  #spec = original species interaciton obs?; partic = participant to drop: "lower" (plant), "higher" (animal) or "both"
-  
-  ext <- lapply(nets, second.extinct,
-                participant=partic,
-                method=extinction.method)
-  
-  rob <- sapply(ext, robustness)
-  sites <- sapply(strsplit(names(rob), "[.]"), function(x) x[1])
-  years <- sapply(strsplit(names(rob), "[.]"), function(x) x[2])
-  
-  dats <- data.frame(Site= sites,
-                     Year=years,
-                     Robustness=rob)
-  rownames(dats) <- NULL
-  
-  dats$Lat <- spec$Lat[match(dats$Site, spec$Site)]
-  
-  return(dats)
-}
+#simExtinction <- function(nets,
+#                          extinction.method,
+#                          spec,
+#                          partic="lower"){
+#  #nets = network list object; extinction.method = "abundance", "degree", or "random" 
+#  #spec = original species interaciton obs?; partic = participant to drop: "lower" (plant), "higher" (animal) or "both"
+#  
+#  ext <- lapply(nets, second.extinct,
+#                participant=partic,
+#                method=extinction.method)
+#  
+#  rob <- sapply(ext, robustness)
+#  sites <- sapply(strsplit(names(rob), "[.]"), function(x) x[1])
+#  years <- sapply(strsplit(names(rob), "[.]"), function(x) x[2])
+#  
+#  dats <- data.frame(Site= sites,
+#                     Year=years,
+#                     Robustness=rob)
+#  rownames(dats) <- NULL
+#  
+#  dats$Lat <- spec$Lat[match(dats$Site, spec$Site)]
+#  
+#  return(dats)
+#}
 
 
 
-#NOT RUN?
 traitFrame <- function(diffs, dist) {
   #extract species from SpSiteYr
   diffs %>%

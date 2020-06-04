@@ -8,13 +8,14 @@ samp2site.spp <- function(site, spp, abund, FUN=mean) {
 }
 
 ## does the reverse of samp2site
-comm.mat2sample <-  function (z) {
-  temp <- data.frame(expand.grid(dimnames(z))[1:2],
-                     as.vector(as.matrix(z)))
-  temp <- temp[sort.list(temp[, 1]), ]
-  data.frame(Site = temp[, 1], Samp = temp[, 3],
-             Date = temp[, 2])
-}
+#comm.mat2sample <-  function (z) {
+#  temp <- data.frame(expand.grid(dimnames(z))[1:2],
+#                     as.vector(as.matrix(z)))
+#  temp <- temp[sort.list(temp[, 1]), ]
+#  data.frame(Site = temp[, 1], Samp = temp[, 3],
+#             Date = temp[, 2])
+#}
+#NOT USED
 
 
 ## function to clean up white-space in a column of data (replaces all
@@ -66,37 +67,39 @@ dat.rm.blanks <- function(spec.dat) {
   return(spec.dat)
 }
 
-build.nets <- function(spec.dat,title) {
-  SY <- breakNet(spec.dat, 'Site', 'Year')
-  SSY <- breakNetSex(spec.dat,'Site','Year')
-  GSY <- lapply(SY, graph.incidence, weighted=TRUE)
-  GSSY <- lapply(SSY, graph.incidence, weighted=TRUE) 
-  assign(paste(title,"SY",sep="_"), SY, envir = globalenv())
-  assign(paste(title,"SSY",sep="_"), SSY, envir = globalenv())
-  assign(paste(title,"GSY",sep="_"), GSY, envir = globalenv())
-  assign(paste(title,"GSSY",sep="_"), GSSY, envir = globalenv())
-  }
-
+#build.nets <- function(spec.dat,title) {
+#  SY <- breakNet(spec.dat, 'Site', 'Year')
+#  SSY <- breakNetSex(spec.dat,'Site','Year')
+#  GSY <- lapply(SY, graph.incidence, weighted=TRUE)
+#  GSSY <- lapply(SSY, graph.incidence, weighted=TRUE) 
+#  assign(paste(title,"SY",sep="_"), SY, envir = globalenv())
+#  assign(paste(title,"SSY",sep="_"), SSY, envir = globalenv())
+#  assign(paste(title,"GSY",sep="_"), GSY, envir = globalenv())
+#  assign(paste(title,"GSSY",sep="_"), GSSY, envir = globalenv())
+#  }
+#NOT USED?
 
 ## return sorted unique values
-id <- function(x) unique(sort(x))
+#id <- function(x) unique(sort(x))
+#NOT USED?
 
 ## function to make pollinator visitation matrices
-make.mats <- function(pollinator.id,
-                      null.mat,
-                      pollinator,
-                      var1,
-                      var2,
-                      occ) {
-  make.mat <- function(P) {
-    var1 <- var1[pollinator==P]
-    var2 <- var2[pollinator==P]
-    occ <- occ[pollinator==P]
-    null.mat[unique(var1),
-             unique(as.character(var2))][!is.na(null.mat)] <- occ
-    null.mat
-  }
-  mats <- lapply(pollinator.id, function(x) make.mat(x))
-  names(mats) <- pollinator.id
-  mats
-}
+#make.mats <- function(pollinator.id,
+#                      null.mat,
+#                      pollinator,
+#                      var1,
+#                      var2,
+#                      occ) {
+#  make.mat <- function(P) {
+#    var1 <- var1[pollinator==P]
+#    var2 <- var2[pollinator==P]
+#    occ <- occ[pollinator==P]
+#    null.mat[unique(var1),
+#             unique(as.character(var2))][!is.na(null.mat)] <- occ
+#    null.mat
+#  }
+#  mats <- lapply(pollinator.id, function(x) make.mat(x))
+#  names(mats) <- pollinator.id
+#  mats
+#}
+#NOT USED?
