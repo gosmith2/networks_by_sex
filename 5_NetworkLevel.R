@@ -60,7 +60,9 @@ save(sexlvlProp50Z,file="data/sexlvlProp50Z.RData")
 pb_upload('data/sexlvlProp50Z.RData',
           name="sexlvlProp50Z.RData",
           tag='data.v.1')
-
+pb_download("sexlvlProp50Z.RData",
+            dest="data",
+            tag="data.v.1")
 
 
 ##Test: proportion of networks where values in the observed 
