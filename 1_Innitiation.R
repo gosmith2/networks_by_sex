@@ -22,8 +22,8 @@ source('prepNets.R')
 
 ##--------Authenticate so that you can download large datasets with piggyback:
 
-#Copy the string below:
-GITHUB_PAT=7423a37de1b5d3913210273a64d0d89e65e5c8f9
+#Copy the string below without the hash:
+# GITHUB_PAT=7423a37de1b5d3913210273a64d0d89e65e5c8f9
   #This is the git token that will give piggyback access to the data releases.
 
 #open your r environment document

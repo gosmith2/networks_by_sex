@@ -17,11 +17,11 @@ distValues5.df <- distComp(nets_mix_clean,"horn",indiv=5)
 
 #add siteyr column, remove NAs from sites that did not have species with the 
 #minimum abundances
-distValues5.df$SpSiteYr <- paste(distValues5.df$GenusSpecies,distValues5.df$SiteYr)
+distValues5.df$SpSiteYr <- paste(distValues5.df$GenusSpecies,
+                                 distValues5.df$SiteYr)
 distValues5.df <- filter(distValues5.df,distance!='NA')
 
 #distValues5obs.df<-subset(distValues5.df,distValues5.df$sim==1)
-
 
 #Save and upload distances
 save(distValues5.df,file='data/distValues5.RData')
@@ -30,7 +30,8 @@ pb_upload("data/distValues5.RData",
           name="distValues5.RData",
           tag="data.v.1")
 
-#download to skip step
+## ****************************************************************
+#download to the previous skip step
 pb_download("distValues5.RData",
             dest="data",
             tag="data.v.1")
@@ -38,15 +39,9 @@ pb_download("distValues5.RData",
 #compare observed M-H distances to simulated null networks
 diffDist5 <- calcDistZ(distValues5.df,"SpSiteYr",zscore=F)
 
-
 #calculate again to generate z-scores for plotting
 diffDist5Zscore <- calcDistZ(distValues5.df,"SpSiteYr",zscore=T)
 save(diffDist5Zscore,file='data/diffDist5Zscore.RData')
-
-pb_upload("data/diffDist5Zscore.RData",
-          name="diffDist5Zscore.RData",
-          tag="data.v.1")
-
 
 ## Test: proportion of species+sites where M-H distance in
 ## observed network was different than many of the simulations. The output
@@ -57,9 +52,9 @@ pb_upload("data/diffDist5Zscore.RData",
 overallTest(diffDist5,"distanceZ",zscore=F,tails=2)
 
 
-
-
-
+pb_upload("data/diffDist5Zscore.RData",
+          name="diffDist5Zscore.RData",
+          tag="data.v.1")
 
 ######-------------------------------
 

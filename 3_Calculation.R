@@ -18,7 +18,6 @@ pb_download("sex_trts_mix5.RData",
 
 load("data/sex_trts_mix5.RData")
 
-
 ##specify the metrics I'll be looking at, number of cores to use
 metric.ls <- c("degree","species.strength","weighted.betweenness",
                "weighted.closeness","d")
@@ -34,8 +33,6 @@ traits5.ls <-
   return(x)
 },mc.cores=cores)
 
-
-
 ###------------------
 ## calculate how different males and females are within each species
 ## within each SiteYr in each iteration. Comparison is 
@@ -44,7 +41,6 @@ traits5.ls <-
 
 sexDiffs5.df <- makeComp(traits5.ls, metric.ls, comparison = "diff")
 
-
 ## Saving and uploading after that long step
 save(sexDiffs5.df, file = 'data/sexDiffs5.RData')
 
@@ -52,14 +48,7 @@ pb_upload('data/sexDiffs5.RData',
           name='sexDiffs5.RData',
           tag="data.v.1")
 
-## downloading the output to skip above step 
-pb_download("sexDiffs5.RData",
-            dest="data",
-            tag="data.v.1")
-load('data/sexDiffs5.RData')
-
-
-###------------------
+## **************************************************************** 
 ##Calculate how different the observed values were from the simulated values.
 ## when zscore=F, outupts the proportion of simulations where the value
 ## was less than or 50% equal to the obesrved difference value. 
@@ -67,22 +56,33 @@ load('data/sexDiffs5.RData')
 ## greater degree than the null expectation. Low proportions indicate that 
 ## females had higher values than males to a greater degree than expected
 
+## downloading the output to skip above step 
+pb_download("sexDiffs5.RData",
+            dest="data",
+            tag="data.v.1")
+load('data/sexDiffs5.RData')
+
 sexDiffsProp50_5.df <- calcNullProp50(sexDiffs5.df,
                                       metric.ls,
                                       zscore=FALSE)
-
 
 ##re-running above but to generate z-scores for graphs
 zscore50_5.df <- calcNullProp50(sexDiffs5.df, 
                                 metric.ls,
                                 zscore=TRUE)
+###------------------
+##Test: proportion of species+sites where m v f difference in
+##observed network was larger than many of the simulations. The output
+##is the proportion of observations (Sp+Site+Year) where the male-female
+## difference diverged from null expectations more than some threshold 
+## (with the specific threshold used based on the tails of the test)
 
+overallTest(sexDiffsProp50_5.df, metric.ls, tails=2, zscore=F)
 
+######-------------------------------
 
-##------------- 
 #save and upload
 save(zscore50_5.df,file="data/zscore50_5.RData")
-
 save(sexDiffsProp50_5.df,file='data/sexDiffsProp50_5.Rdata')
 
 pb_upload("data/zscore50_5.RData",
@@ -93,37 +93,14 @@ pb_upload("data/sexDiffsProp50_5.Rdata",
           name="sexDiffsProp50_5.Rdata",
           tag="data.v.1")
 
-
-
-###------------------
-##Test: proportion of species+sites where m v f difference in
-##observed network was larger than many of the simulations. The output
-##is the proportion of observations (Sp+Site+Year) where the male-female
-## difference diverged from null expectations more than some threshold 
-## (with the specific threshold used based on the tails of the test)
-
-
-overallTest(sexDiffsProp50_5.df, metric.ls, tails=2, zscore=F)
-
-
-
-
-
-
-
-######-------------------------------
-
 # - Alternative code that will be removed before pub
 
 ######-------------------------------
-
 
 sexDiffs2.df <- makeComp(traits2.ls, metric.ls, comparison = "diff")
 sexDiffs3.df <- makeComp(traits3.ls, metric.ls, comparison = "diff")
 sexDiffs10.df <- makeComp(traits10.ls, metric.ls, comparison = "diff")
 sexDiffs20.df <- makeComp(traits20.ls, metric.ls, comparison = "diff")
-
-
 
 #Add back in the GenusSpecies and Family columns 
 sexDiffsProp50_5.df$GenusSpecies <- gsub("_.*$", "", sexDiffsProp50_5.df$SpSiteYr)

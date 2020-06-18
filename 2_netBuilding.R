@@ -5,15 +5,8 @@
 ## Lastly, it calculates node-level network metrics
 ## Modified (very slightly) from Ponisio sky islands data prep.
 
-
-##this should be run on lauren's computer via terminal (git bash):
-#ssh gsmith@osmia.dyn.ucr.edu
-#ssh 192.168.1.5
-#cd Documents
-#git clone https://github.com/gosmith2/networks_by_sex.git
-#cd Documents/networks_by_sex
-
-## setwd("~/Dropbox/networks_by_sex")
+## all working directories are relative to the gitrepo 
+library(parallel)
 
 pb_download("spec_all.RData",
             dest="data",
@@ -30,7 +23,7 @@ load("data/spec_all.RData")
 ## via the function mclapply. 
 
 
-## cores should be 3 for bombus, 10 for osmia
+## the number of cores you wish to run the simulation in parallel across 
 cores <- 10
 
 ## randomize the sexes w/in species w/in sites. observed data is
@@ -39,8 +32,6 @@ cores <- 10
 rand_sexes <- ran.gen(spec_all, 999, cores)
 
 save(rand_sexes,file="data/rand_sexes.RData")
-
-
 
 #build the networks at the sex level using the mixed sexes
 nets_mix <- mclapply(rand_sexes, function(y){
@@ -51,14 +42,12 @@ nets_mix <- mclapply(rand_sexes, function(y){
 ## confirm that the networks are actually different
 ifelse(any(nets_mix[[1]][[1]]!=nets_mix[[2]][[1]]),
        print("SUCCESS: the networks are different"),
-       print("WARNING: the networks may not be different"))
-
+       print("WARNING: the networks are not different"))
 
 #remove all networks with too few interactions to calculate metrics
 nets_mix_clean <- mclapply(nets_mix, function(x){
   x[sapply(x, function(y) all(dim(y) > 1))]
 }, mc.cores=cores)
-
 
 #save the networks themselves and upload them
 save(nets_mix_clean, file = 'data/nets_mix_clean.Rdata')
@@ -80,14 +69,12 @@ sex_trts_mix5 <- mclapply(nets_mix_clean,
                           function(x) calcSpec(x, indiv = 5),
                           mc.cores = cores)
 
-
 ## confirm that the values are different
 ifelse(any(sex_trts_mix5[[1]]$species.strength!=
              sex_trts_mix5[[2]]$species.strength),
        print("SUCCESS: the network statistics are different between randomizations"),
-       print("WARNING: the network statistics may be not different between randomizations")
+       print("WARNING: the network statistics are not different between randomizations")
 )
-
 
 #save and upload
 save(sex_trts_mix5,file='data/sex_trts_mix5.RData')
@@ -95,8 +82,6 @@ save(sex_trts_mix5,file='data/sex_trts_mix5.RData')
 pb_upload("data/sex_trts_mix5.RData",
           name="sex_trts_mix5.RData",
           tag="data.v.1")
-
-
 
 ######-------------------------------
 

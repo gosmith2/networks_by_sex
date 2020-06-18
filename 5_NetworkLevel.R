@@ -37,6 +37,8 @@ pb_upload("data/sexlvl.RData",
           name="sexlvl.RData",
           tag = "data.v.1")
 
+## ****************************************************************
+
 pb_download("sexlvl.RData",
           dest="data",
           tag = "data.v.1")
@@ -49,7 +51,6 @@ sexlvlProp50 <- calcNullProp50(sexlvl,
                              zscore=F,
                              level="network")
 
-
 #Repeat above to generate z-scores for plotting
 sexlvlProp50Z <- calcNullProp50(sexlvl,
                                 sexmet,
@@ -60,6 +61,8 @@ save(sexlvlProp50Z,file="data/sexlvlProp50Z.RData")
 pb_upload('data/sexlvlProp50Z.RData',
           name="sexlvlProp50Z.RData",
           tag='data.v.1')
+
+## ****************************************************************
 pb_download("sexlvlProp50Z.RData",
             dest="data",
             tag="data.v.1")
@@ -69,10 +72,6 @@ pb_download("sexlvlProp50Z.RData",
 ## network was significantly different than many of the simulations.
 
 overallTest(sexlvlProp50, sexmet, tails=2, zscore=F)
-
-
-
-
 
 ######-------------------------------
 
