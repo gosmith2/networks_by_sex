@@ -7,6 +7,8 @@
 
 ## all working directories are relative to the gitrepo 
 library(parallel)
+library(piggyback)
+source("prepNets.R")
 
 pb_download("spec_all.RData",
             dest="data",
@@ -82,49 +84,5 @@ save(sex_trts_mix5,file='data/sex_trts_mix5.RData')
 pb_upload("data/sex_trts_mix5.RData",
           name="sex_trts_mix5.RData",
           tag="data.v.1")
-
-######-------------------------------
-
-# - Alternative code that will be removed before pub
-
-######-------------------------------
-
-#rather than group observations at the Sp+site+yr level, grouping across sites w/in a year:
-rand.sexes.SpYr.ls <- ran.gen(spec.all,3,cores,"SpYr")
-
-nets.mix.SpYr <- mclapply(rand.sexes.SpYr.ls, function(y){
-  breakNetMixSpYr(y, 'Year', 'GenusSpeciesMix')
-}, mc.cores = cores)
-
-nets.mix.cleanSpYr <- mclapply(nets.mix.SpYr, function(x){
-  x[sapply(x, function(y) all(dim(y) > 1))]
-}, mc.cores=cores)
-
-sex.trts.mix2SpYr <- mclapply(nets.mix.cleanSpYr,
-                              function(x) calcSpec(x, indiv = 2, lvl="SpYr"),
-                              mc.cores = cores)
-
-
-#Alternative reshuffling thresholds:
-sex.trts.mix2 <- mclapply(nets.mix.clean,
-                          function(x) calcSpec(x, indiv = 2),
-                          mc.cores = cores)
-
-sex.trts.mix3 <- mclapply(nets.mix.clean,
-                          function(x) calcSpec(x, indiv = 3),
-                          mc.cores = cores)
-
-sex.trts.mix10 <- mclapply(nets.mix.clean,
-                           function(x) calcSpec(x, indiv = 10),
-                           mc.cores = cores)
-
-sex.trts.mix20 <- mclapply(nets.mix.clean,
-                           function(x) calcSpec(x, indiv = 20),
-                           mc.cores = cores)
-
-save(sex.trts.mix3,file='data/sex_trts_mix3.RData')
-save(sex.trts.mix10,file='data/sex_trts_mix10.RData')
-save(sex.trts.mix20,file='data/sex_trts_mix10.RData')
-
 
 

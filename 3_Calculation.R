@@ -10,6 +10,12 @@
 
 ################################################
 
+library(parallel)
+library(piggyback)
+library(bipartite)
+library(tidyverse)
+source('prepNets.R')
+
 ###------------------
 ## Setup
 pb_download("sex_trts_mix5.RData",
@@ -29,9 +35,9 @@ traits5.ls <-
   x$SiteYr <- paste(x$Site, x$Year, sep="_")
   x$Sp <- gsub( "_.*$", "", x$GenusSpecies )
   x <- filter(x,x$sex == "m" | x$sex == "f")
-  droplevels(x$sex) #doesn't seem to work for whatever reason...
   return(x)
 },mc.cores=cores)
+
 
 ###------------------
 ## calculate how different males and females are within each species
@@ -47,6 +53,7 @@ save(sexDiffs5.df, file = 'data/sexDiffs5.RData')
 pb_upload('data/sexDiffs5.RData',
           name='sexDiffs5.RData',
           tag="data.v.1")
+
 
 ## **************************************************************** 
 ##Calculate how different the observed values were from the simulated values.
@@ -70,6 +77,7 @@ sexDiffsProp50_5.df <- calcNullProp50(sexDiffs5.df,
 zscore50_5.df <- calcNullProp50(sexDiffs5.df, 
                                 metric.ls,
                                 zscore=TRUE)
+
 ###------------------
 ##Test: proportion of species+sites where m v f difference in
 ##observed network was larger than many of the simulations. The output
@@ -93,24 +101,3 @@ pb_upload("data/sexDiffsProp50_5.Rdata",
           name="sexDiffsProp50_5.Rdata",
           tag="data.v.1")
 
-# - Alternative code that will be removed before pub
-
-######-------------------------------
-
-sexDiffs2.df <- makeComp(traits2.ls, metric.ls, comparison = "diff")
-sexDiffs3.df <- makeComp(traits3.ls, metric.ls, comparison = "diff")
-sexDiffs10.df <- makeComp(traits10.ls, metric.ls, comparison = "diff")
-sexDiffs20.df <- makeComp(traits20.ls, metric.ls, comparison = "diff")
-
-#Add back in the GenusSpecies and Family columns 
-sexDiffsProp50_5.df$GenusSpecies <- gsub("_.*$", "", sexDiffsProp50_5.df$SpSiteYr)
-sexDiffsProp50_5.df$Family <- spec_all$Family[match(sexDiffsProp50_5.df$GenusSpecies,
-                                                    spec_all$GenusSpecies)]
-
-zscore50_5.df %>%
-  mutate(GenusSpecies = gsub( "_.*$", "", SpSiteYr)) ->
-  zscore50_5.df
-zscore50_5.df$Family <- spec_all$Family[match(zscore50_5.df$GenusSpecies,
-                                              spec_all$GenusSpecies)]
-#add in a couple of missing families (NOTE: May not be necessary after data revision)
-zscore50_5.df[432,8] <- "Syrphidae"
