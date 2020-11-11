@@ -88,6 +88,11 @@ spec.y$GenusSpeciesSex<-ifelse(spec.y$Sex %in% c("m","f"),
 ## add a column combining sites and years
 spec.y$SiteYr <- paste(spec.y$Site,spec.y$Year)
 
+## add a column for dataset source
+spec.y$dataset <- rep("y")
+
+save(spec.y,file='data/spec_y.RData')
+
 
 ####--------------------------####
 #### Hedgerow
@@ -122,6 +127,14 @@ spec.h$GenusSpeciesSex <- ifelse(spec.h$Sex %in% c("m","f"),
 ## add a column combining sites and years
 spec.h$SiteYr <- paste(spec.h$Site,spec.h$Year)
 
+## add a column for dataset source
+spec.h$dataset <- rep("h")
+
+## remove observations for which the pollinator was only identified to Genus
+spec.h <- spec.h[str_detect(spec.h$GenusSpecies," "),]
+
+save(spec.h,file='data/spec_h.RData')
+
 ####--------------------------####
 #### Sky Islands
 ####--------------------------####
@@ -135,9 +148,9 @@ spec.s <- spec.s[spec.s$Family %in% c("Andrenidae", "Apidae",
 ## drop pan data
 spec.s <- spec.s[spec.s$Method == "Net",]
 
-#combine plant and pollinator names into single columns
-spec.s$PlantGenusSpecies <- paste(spec.s$PlantGenus,spec.s$PlantSpecies," ")
-spec.s$GenusSpecies <- paste(spec.s$Genus,spec.s$Species," ")
+#combine plant and pollinator names into single columns, do other cleanup
+spec.s <- dat.clean(spec.s)
+
 
 #remove blanks
 spec.s <- dat.rm.blanks(spec.s)
@@ -155,6 +168,11 @@ spec.s$Year <- as.numeric(paste0("20",str_sub(spec.s$Date,-2)))
 ## add a column combining sites and years
 spec.s$SiteYr <- paste(spec.s$Site,spec.s$Year)
 
+## add a column for dataset source
+spec.s$dataset <- rep("s")
+
+save(spec.s,file='data/spec_s.RData')
+
 
 ####--------------------------####
 #### Combining network lists
@@ -168,7 +186,8 @@ keeps <- c("UniqueID",
            "GenusSpeciesSex",
            "Sex",
            "SiteYr",
-           "Family")
+           "Family",
+           "dataset")
 
 #all sites
 bind_rows(select(spec.y,keeps),

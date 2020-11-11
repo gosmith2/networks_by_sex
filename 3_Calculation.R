@@ -25,7 +25,7 @@ pb_download("sex_trts_mix5.RData",
 load("data/sex_trts_mix5.RData")
 
 ##specify the metrics I'll be looking at, number of cores to use
-metric.ls <- c("degree","species.strength","weighted.betweenness",
+metric.ls <- c("degree","weighted.betweenness",
                "weighted.closeness","d")
 cores <- 10
 
@@ -69,14 +69,15 @@ pb_download("sexDiffs5.RData",
             tag="data.v.1")
 load('data/sexDiffs5.RData')
 
-sexDiffsProp50_5.df <- calcNullProp50(sexDiffs5.df,
-                                      metric.ls,
-                                      zscore=FALSE)
+#sexDiffsProp50_5.df <- calcNullProp50(sexDiffs5.df,
+#                                      metric.ls,
+#                                      zscore=FALSE)
 
-##re-running above but to generate z-scores for graphs
+##generate z-scores
 zscore50_5.df <- calcNullProp50(sexDiffs5.df, 
                                 metric.ls,
                                 zscore=TRUE)
+
 
 ###------------------
 ##Test: proportion of species+sites where m v f difference in
@@ -85,19 +86,26 @@ zscore50_5.df <- calcNullProp50(sexDiffs5.df,
 ## difference diverged from null expectations more than some threshold 
 ## (with the specific threshold used based on the tails of the test)
 
-overallTest(sexDiffsProp50_5.df, metric.ls, tails=2, zscore=F)
+#overallTest(sexDiffsProp50_5.df, metric.ls, tails=2, zscore=F)
+
+overallTest(zscore50_5.df, metric.ls, tails =2,zscore=T)
+
+t.tester(zscore50_5.df,metric.ls)
+
+#genera where a difference in a network metric was observed
+unique(zscore50_5.df$Genus[abs(zscore50_5.df$degree)>1.96])
+unique(zscore50_5.df$Genus[abs(zscore50_5.df$d)>1.96])
+unique(zscore50_5.df$Genus[abs(zscore50_5.df$weighted.closeness)>1.96])
+
 
 ######-------------------------------
 
 #save and upload
 save(zscore50_5.df,file="data/zscore50_5.RData")
-save(sexDiffsProp50_5.df,file='data/sexDiffsProp50_5.Rdata')
+#save(sexDiffsProp50_5.df,file='data/sexDiffsProp50_5.Rdata')
 
 pb_upload("data/zscore50_5.RData",
           name="zscore50_5.RData",
           tag="data.v.1")
 
-pb_upload("data/sexDiffsProp50_5.Rdata",
-          name="sexDiffsProp50_5.Rdata",
-          tag="data.v.1")
 
