@@ -7,14 +7,14 @@
 pb_download("zscore50_5.RData",
             dest="data",
             tag="data.v.1")
-pb_download("diffDist5Zscore.RData",
+pb_download("diffDist5Zscoreboot.RData",
             dest="data",
             tag="data.v.1")
 pb_download("sexlvlProp50Z.RData",
             dest="data",
             tag="data.v.1")
 load("data/zscore50_5.RData")
-load("data/diffDist5Zscore.RData")
+load("data/diffDist5Zscoreboot.RData")
 load("data/sexlvlProp50Z.RData")
 load("data/nets_mix_clean.RData")
 load('data/spec_all.RData')
@@ -29,17 +29,29 @@ library(tidyverse)
 
 ##combine network statistics and M-H distance in a single dataframe. 
 #Z-scores were used here to better show the magnitude of differences graphically
-diff_traits5Zscore.df<-traitFrame(zscore50_5.df,
-                                  diffDist5Zscore)
+diff_traits5ZscorebootT.df<-traitFrame(zscore50_5bootT.df,
+                                  diffDist5ZscorebootT)
+
+diff_traits5ZscorebootT.cull <-traitFrame(zscore50_5bootT.cull,
+                                           diffDist5ZscorebootT.cull)
+
+diff_traits5Zscore.df<- traitFrame(zscore50_5.df,
+                                diffDist5Zscore)
 
 #Melt data frame into a form that ggplot likes better
-nodelvlmeltZ<-melt(diff_traits5Zscore.df[,c(1,4,2,3,6,5)],
+nodelvlmeltZbootT<-melt(diff_traits5ZscorebootT.df[,c(1,4,2,3,6,5)],
                    ID="SpSiteYr")
   #This orders the factors in the plot to match the order they're presented in the text
+nodelvlmeltZbootT.cull<-melt(diff_traits5ZscorebootT.cull[,c(1,4,2,3,6,5)],
+                         ID="SpSiteYr")
+
+nodelvlmeltZ<-melt(diff_traits5Zscore.df[,c(1,4,2,3,6,5)],
+                              ID="SpSiteYr")
+
 
 
 #Node-level plot
-ggplot(nodelvlmeltZ,aes(x=variable,y=value))+
+ggplot(nodelvlmeltZbootT.cull,aes(x=variable,y=value))+
   geom_violin(draw_quantiles=0.5) +
   #geom_jitter(size=1,width=.2,shape=21) + #Alternative to add actual datapoints to the graph
   geom_hline(yintercept=c(0,1.96,-1.96),linetype=c("solid","dashed","dashed"),color=c("red","red","red"))+
@@ -81,12 +93,14 @@ ggplot(nodelvlmeltZ1,aes(x=variable,y=value))+
 ##-------------
 ## Network-level plot
 
-netMetZ <- cbind(sexlvlProp50Z,robZ[,c(1,2)])
-sexlvlmeltZ<-melt(sexlvlProp50Z[,c(3,4,2,1,5,6,7,8)],
+#netMetZ <- cbind(sexlvlProp50Z,robZ[,c(1,2)])
+sexlvlmeltZbootTI<-melt(sexlvlProp50ZbootTI,   #[,c(3,4,2,1,5,6,7,8)],
+                             ID="SpSiteYr")
+sexlvlmeltZbootTI.cull<-melt(sexlvlProp50ZbootTI.cull,   #[,c(3,4,2,1,5,6,7,8)],
                   ID="SpSiteYr")
   #This orders the factors in the plot to match the order they're presented in the text
 
-ggplot(sexlvlmeltZ,aes(x=variable,y=value))+
+ggplot(sexlvlmeltZbootTI.cull,aes(x=variable,y=value))+
   geom_violin(draw_quantiles=0.5)+
   #geom_jitter(size=1,width=.2,shape=21,color= "gray65") + # to add the actual points to the plot
   geom_hline(yintercept=c(0,1.96,-1.96),linetype=c("solid","dashed","dashed"),color=c("red3","red3","red3"),size =0.9)+
@@ -96,7 +110,7 @@ ggplot(sexlvlmeltZ,aes(x=variable,y=value))+
   theme(axis.text.x=element_text(size=12,angle=45,hjust=1),
         axis.text.y=element_text(size=12),
         axis.title=element_text(size=14))+
-  scale_x_discrete(labels=str_wrap(c("Pollinator niche overlap",
+  #scale_x_discrete(labels=str_wrap(c("Pollinator niche overlap",
                                      "Plant niche overlap",
                                      "H2'",
                                      "NODF", 

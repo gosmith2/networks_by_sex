@@ -9,6 +9,7 @@ library(parallel)
 library(piggyback)
 library(vegan)
 library(tidyverse) 
+library(stringr)
 source('prepNets.R')
 
 
@@ -17,23 +18,23 @@ pb_download('nets_mix_clean2k.RData',
             dest="data",
             tag="data.v.1")
 
-load("data/nets_mix_clean2kRdata")
+load("data/nets_mix_clean1kbootST.Rdata")
 
 #calculate the M-H index for species with at least 5 males and 5 females
-distValues5.df <- distComp(nets_mix_clean2k,"horn",indiv=5)
+distValues5J.df <- distComp(nets_mix_clean2k[1:2],"jaccard",indiv=5) #try chao, try jaccard<-
 
 #add siteyr column, remove NAs from sites that did not have species with the 
 #minimum abundances
-distValues5.df$SpSiteYr <- paste(distValues5.df$GenusSpecies,
-                                 distValues5.df$SiteYr, sep="_")
-distValues5.df <- filter(distValues5.df,distance!='NA')
+distValues5J.df$SpSiteYr <- paste(distValues5J.df$GenusSpecies,
+                                 gsub("\\.","_",distValues5J.df$SiteYr), sep="_")
+distValues5J.df <- filter(distValues5J.df,distance!='NA')
 
 
 #Save and upload distances
 save(distValues5.df,file='data/distValues5.RData')
 
-pb_upload("data/distValues5.RData",
-          name="distValues5.RData",
+pb_upload("data/distValues5boot20.RData",
+          name="distValues5boot20.RData",
           tag="data.v.1")
 
 ## ****************************************************************
@@ -43,9 +44,11 @@ pb_download("distValues5.RData",
             tag="data.v.1")
 
 #compare observed M-H distances to simulated null networks, generating zscores
-diffDist5Zscore <- calcDistZ(distValues5.df,"SpSiteYr",zscore=T)
-save(diffDist5Zscore,file='data/diffDist5Zscore.RData')
-
+diffDist5ZscoreJ <- calcDistZ(distValues5J.df,"SpSiteYr",zscore=T)
+save(diffDist5ZscorebootT,file='data/diffDist5ZscorebootT.RData')
+pb_upload("data/diffDist5ZscorebootT.RData",
+          name="diffDist5ZscorebootT.RData",
+          tag="data.v.1")
 #diffDist5 <- calcDistZ(distValues5.df,"SpSiteYr",zscore=F)
 
 
@@ -56,17 +59,18 @@ save(diffDist5Zscore,file='data/diffDist5Zscore.RData')
 ## (with the specific threshold used based on the tails of the test)
 
 #overallTest(diffDist5,"distanceZ",zscore=F,tails=2)
-overallTest(diffDist5Zscore,"distanceZ",zscore=T,tails=2)
+overallTest(diffDist5Zscoreboot20,"distanceZ",zscore=T,tails=2)
 
-t.tester(diffDist5Zscore,'distanceZ')
+t.tester(diffDist5Zscoreboot20,'distanceZ')
   #mean for distribution of zscore values diff from 0 
   
 #genera where a difference in M-H was observed
-unique(word(unique(diffDist5Zscore$Level[abs(diffDist5Zscore$distanceZ)>1.96]),1))
+unique(word(unique(diffDist5ZscorebootST$Level[abs(diffDist5Zscore$distanceZ)>1.96]),1))
   #10 genera
+  #with ST, there are 27 genera
   
-pb_upload("data/diffDist5Zscore.RData",
-          name="diffDist5Zscore.RData",
+pb_upload("data/diffDist5ZscorebootST.RData",
+          name="diffDist5ZscorebootST.RData",
           tag="data.v.1")
 
 
@@ -75,6 +79,9 @@ pb_upload("data/diffDist5Zscore.RData",
 
 load('data/zscore50_5.RData')
 load('data/diffDist5Zscore.RData')
+load('data/spec_all.RData')
+metric.ls <- c("degree","weighted.betweenness",
+               "weighted.closeness","d")
 
 #network metrics
 zscore50_5.avged <- zscore_avger(zscore50_5.df,metric.ls)
