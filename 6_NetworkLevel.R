@@ -29,13 +29,6 @@ cores = 10
 
 
 ##Using the randomized networks built in 2_NetBuilding, calculate network level metrics
-#NOTE: These steps are long, primarily due to the robustness simulations 
-
-#THIS IS WHERE YOU TOGGLE INTERNAL NULLS. KEY: where sexlvlboot="y", and an epithet from a previous step (e.g., "boot5") = z
-  #y = original: no bootstrapping, no internal nulls
-  #yz = bootstrapped observations, no internal nulls
-  #yzI = boostrapped observations, internal nulls, vaznull.fast
-  #yzIB = boostrapped obs, internal nulls, basnull
 
 sexlvlO.net <- mclapply(nets_mix_clean10kO,
                    function(x) calcNets(x, metrics = metric.net),
@@ -44,12 +37,6 @@ sexlvlS.net <- mclapply(nets_mix_clean10kS,
                         function(x) calcNets(x, metrics = metric.net),
                         mc.cores = cores)
 
-
-#sexlvlbootTI.f <- mclapply(c(1:2001),function(x){
-#  df <- cbind(sexlvlbootTI[[x]],sexlvlbootTI.net[[x]][,c(1,2)])
-#  df <- df[,c(6,7,1,2,3,4,5)]
-#  return(df)
-#},mc.cores=cores)
 
 save(sexlvlS.net,file="data/sexlvlS.RData")
 save(sexlvlO.net,file="data/sexlvlO.RData")
@@ -195,25 +182,3 @@ summary(robH.S)
 robL.S <- lm(robustness.LL~dataset,data=zNetS)
 summary(robL.S)
 
-
-
-
-#overallTest(sexlvlProp50ZO, sexmet, tails=2, zscore=T)
-
-
-t.tester(sexlvlProp50ZO,names(sexlvlProp50ZO[,1:6]))
-  #means for everything except for robustness are  significantly different from 0, 
-  #all neg except for h2
-
-
-
-zNet_all <- rbind(zscore_net_joiner(sexlvlProp50ZNEWO,nets_mix_clean10kNEWO,spec_all,"O"),
-                  zscore_net_joiner(sexlvlProp50ZNEWS,nets_mix_clean1kNEWS,spec_all,"S"),
-                  zscore_net_joiner(sexlvlProp50ZNEWD,nets_mix_clean1kNEWD,spec_all,"D"))
-
-
-nodf.lme <- lme(NODF ~ model+dataset,random=~1|plants,data=zNet_all,na.action=na.omit)
-summary(nodf.lme)
-
-nodf.lme <- lme(H2 ~ model+dataset,random=~1|plants,data=zNet_all,na.action=na.omit)
-summary(nodf.lme)

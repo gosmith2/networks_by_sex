@@ -27,49 +27,13 @@ library(tidyverse)
 ##----------------
 #Node-level plot:
 
-##combine network statistics and M-H distance in a single dataframe. 
-#Z-scores were used here to better show the magnitude of differences graphically
-#diff_traits5ZscoreNEWSST.cull<-traitFrame(zscore50_5NEWSST.cull,
-#                                  diffDist5ZscoreNEWSST.cull)
-#diff_traits5ZscoreNEWDST.cull<-traitFrame(zscore50_5NEWDST.cull,
-#                                      diffDist5ZscoreNEWDST.cull)
-#diff_traits5ZscoreNEWOST.cull<-traitFrame(zscore50_5NEWOST.cull,
-#                                      diffDist5ZscoreNEWOST.cull)
 
-#diff_traits5ZscorebootT.cull <-traitFrame(zscore50_5bootT.cull,
-#                                           diffDist5ZscorebootT.cull)
-
-#diff_traits5Zscore.df<- traitFrame(zscore50_5.df,
-#                                diffDist5Zscore)
-
-#Melt data frame into a form that ggplot likes better
+#Melt data frame into a form that ggplot likes better, re-order columns to match text
 nodelvlmeltO<-melt(zjoinO[,c(1,3,2,5,4)],
                    ID="SpSiteYr")
 nodelvlmeltS<-melt(zjoinS[,c(1,3,2,5,4)],
                    ID="SpSiteYr")
 
-#nodelvlmeltZNEWSST<-melt(diff_traits5ZscoreNEWSST.cull[,c(1,4,2,3,6,5)],
-#                       ID="SpSiteYr")
-#nodelvlmeltZNEWOST<-melt(diff_traits5ZscoreNEWOST.cull[,c(1,4,2,3,6,5)],
-#                         ID="SpSiteYr")
-#nodelvlmeltZNEWDST<-melt(diff_traits5ZscoreNEWDST.cull[,c(1,4,2,3,6,5)],
-#                         ID="SpSiteYr")
-
-#nodelvlmeltZNEWO$trt <- rep('O')
-#nodelvlmeltZNEWD$trt <- rep('D')
-#nodelvlmeltZNEWS$trt <- rep('S')
-
-#nodelvlmeltZNEW <- rbind(nodelvlmeltZNEWO,nodelvlmeltZNEWD,nodelvlmeltZNEWS)
-
-  #This orders the factors in the plot to match the order they're presented in the text
-#nodelvlmeltZbootT.cull<-melt(diff_traits5ZscorebootT.cull[,c(1,4,2,3,6,5)],
-#                         ID="SpSiteYr")
-
-#nodelvlmeltZ<-melt(diff_traits5Zscore.df[,c(1,4,2,3,6,5)],
-#                              ID="SpSiteYr")
-
-
-#dodge <- position_dodge(width=0.5)
 
 #Node-level plot
 ggplot(nodelvlmeltS,aes(x=variable,y=value))+
@@ -97,23 +61,6 @@ ggplot(nodelvlmeltS,aes(x=variable,y=value))+
 
 netMeltO <- melt(zNetO[,c(2,1,3,4,5,6,7)],ID='SpSiteYr')
 netMeltS <- melt(zNetS[,c(2,1,3,4,5,6,7)],ID='SpSiteYr')
-
-
-#netMetZ <- cbind(sexlvlProp50Z,robZ[,c(1,2)])
-sexlvlmeltZNEWS<-melt(sexlvlProp50ZNEWS,   #[,c(3,4,2,1,5,6,7,8)],
-                             ID="SpSiteYr")
-sexlvlmeltZNEWD<-melt(sexlvlProp50ZNEWD,   #[,c(3,4,2,1,5,6,7,8)],
-                      ID="SpSiteYr")
-sexlvlmeltZNEWO<-melt(sexlvlProp50ZNEWO,   #[,c(3,4,2,1,5,6,7,8)],
-                      ID="SpSiteYr")
-
-sexlvlmeltZNEWO$trt <- rep('O')
-sexlvlmeltZNEWD$trt <- rep('D')
-sexlvlmeltZNEWS$trt <- rep('S')
-
-sexlvlmeltZNEW_all <- rbind(sexlvlmeltZNEWO,sexlvlmeltZNEWD,sexlvlmeltZNEWS)
-
-
 
 
 ggplot(netMeltS,aes(x=variable,y=value,fill=variable,alpha=0.5))+
@@ -149,12 +96,12 @@ length(unique(spec_all$SiteYr))
 
 #total networks used in analyses (i.e., had at least 1 species where both sexes present)
 load('data/nets_mix_clean2k.RData')
-length(nets_mix_clean2k[[1]])
+length(nets_mix_clean10kO[[1]])
   #256
 
 
 #total number of pollinator species
-net_list <- sub('\\.',' ',names(nets_mix_clean[[1]]))
+net_list <- sub('\\.',' ',names(nets_mix_clean10kO[[1]]))
 spec_all_analysis <- spec_all[spec_all$SiteYr %in% net_list,]
 length(unique(spec_all_analysis$GenusSpecies))
   #393
@@ -172,7 +119,7 @@ length(unique(paste(spec_all_analysis$PlantGenusSpecies,
 ##--Supplementary table: Species presence in different datasets
 
 #list of sites with at least 1 species having both sexes
-finalsites.ls <- sub("\\.", " ",names(nets_mix_clean2k[[1]]))
+finalsites.ls <- sub("\\.", " ",names(nets_mix_clean10k[[1]]))
 
 spec_final <- spec_all[spec_all$SiteYr %in% finalsites.ls,]
 
@@ -216,19 +163,3 @@ all.df$Family <- spec_all$Family[match(all.df$Species,spec_all$GenusSpecies)]
 
 write.csv(all.df,"data/NetworkNumbers.csv")
 
-
-
-
-
-#raw stuff
-
-nodeMeltRawO <- melt(sexDiffs5O.df[[1]],ID=c("species",'SiteYr'))
-ggplot(nodeMeltRawO[nodeMeltRawO$variable=='d',],aes(x=variable,y=value))+
-  geom_violin(draw_quantiles=0.5) +
-  #geom_jitter(size=1,width=.2,shape=21) + #Alternative to add actual datapoints to the graph
-  geom_hline(yintercept=0,linetype="dashed",color="red")+
-  theme(axis.text.x=element_text(size=12,angle=45,hjust=1),
-        axis.text.y=element_text(size=12),
-        axis.title=element_text(size=14))+
-  ylab("Z-score Value")+
-  xlab("Network Metric")

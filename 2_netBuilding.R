@@ -38,89 +38,90 @@ spec_allO <- plant.shuffler(spec_all,trt='orig')
 
 ## randomize the sexes w/in species w/in sites. observed data is
 ## element 1 of the resulting list, randomized are elements 2-1000
-rand_sexes2kNEWS1 <- ran.gen(spec_allS, 2000, cores)
-rand_sexes2kNEWS2 <- ran.gen(spec_allS, 2000, cores)
-rand_sexes2kNEWS3 <- ran.gen(spec_allS, 2000, cores)
-rand_sexes2kNEWS4 <- ran.gen(spec_allS, 2000, cores)
-rand_sexes2kNEWS5 <- ran.gen(spec_allS, 2000, cores)
+rand_sexes2kS1 <- ran.gen(spec_allS, 2000, cores)
+rand_sexes2kS2 <- ran.gen(spec_allS, 2000, cores)
+rand_sexes2kS3 <- ran.gen(spec_allS, 2000, cores)
+rand_sexes2kS4 <- ran.gen(spec_allS, 2000, cores)
+rand_sexes2kS5 <- ran.gen(spec_allS, 2000, cores)
 
-rand_sexes2kNEWO1 <- ran.gen(spec_allO, 2000, cores)
-rand_sexes2kNEWO2 <- ran.gen(spec_allO, 2000, cores)
-rand_sexes2kNEWO3 <- ran.gen(spec_allO, 2000, cores)
-rand_sexes2kNEWO4 <- ran.gen(spec_allO, 2000, cores)
-rand_sexes2kNEWO5 <- ran.gen(spec_allO, 2000, cores)
+rand_sexes2kO1 <- ran.gen(spec_allO, 2000, cores)
+rand_sexes2kO2 <- ran.gen(spec_allO, 2000, cores)
+rand_sexes2kO3 <- ran.gen(spec_allO, 2000, cores)
+rand_sexes2kO4 <- ran.gen(spec_allO, 2000, cores)
+rand_sexes2kO5 <- ran.gen(spec_allO, 2000, cores)
 
 ##Note: 2000 was the highest number of iterations that successfully compiled as a single object, 
 ##presumably due to memory constraints. Multiple objects were therefore created to get to 
 ##higher iteration amounts
 
-#rand_sexes1kNEWO <- ran.gen(spec_allO, 1000, cores)#,boot=TRUE,bootnum=c(4,6,1))
+
+#save the objects to pause and load later
+save(rand_sexes2kO1,file='data/rand_sexes2kO1.RData')
+save(rand_sexes2kO2,file='data/rand_sexes2kO2.RData')
+save(rand_sexes2kO3,file='data/rand_sexes2kO3.RData')
+save(rand_sexes2kO4,file='data/rand_sexes2kO4.RData')
+save(rand_sexes2kO5,file='data/rand_sexes2kO5.RData')
+
+save(rand_sexes2kS1,file='data/rand_sexes2kS1.RData')
+save(rand_sexes2kS2,file='data/rand_sexes2kS2.RData')
+save(rand_sexes2kS3,file='data/rand_sexes2kS3.RData')
+save(rand_sexes2kS4,file='data/rand_sexes2kS4.RData')
+save(rand_sexes2kS5,file='data/rand_sexes2kS5.RData')
 
 
-save(rand_sexes2kNEWO1,file='data/rand_sexes2kNEWO1.RData')
-save(rand_sexes2kNEWO2,file='data/rand_sexes2kNEWO2.RData')
-save(rand_sexes2kNEWO3,file='data/rand_sexes2kNEWO3.RData')
-save(rand_sexes2kNEWO4,file='data/rand_sexes2kNEWO4.RData')
-save(rand_sexes2kNEWO5,file='data/rand_sexes2kNEWO5.RData')
 
-save(rand_sexes2kNEWS1,file='data/rand_sexes2kNEWS1.RData')
-save(rand_sexes2kNEWS2,file='data/rand_sexes2kNEWS2.RData')
-save(rand_sexes2kNEWS3,file='data/rand_sexes2kNEWS3.RData')
-save(rand_sexes2kNEWS4,file='data/rand_sexes2kNEWS4.RData')
-save(rand_sexes2kNEWS5,file='data/rand_sexes2kNEWS5.RData')
-
-
-
-load('data/rand_sexes2kNEWS1.RData')
-load('data/rand_sexes2kNEWS2.RData')
-load('data/rand_sexes2kNEWS3.RData')
-load('data/rand_sexes2kNEWS4.RData')
-load('data/rand_sexes2kNEWS5.RData')
+load('data/rand_sexes2kS1.RData')
+load('data/rand_sexes2kS2.RData')
+load('data/rand_sexes2kS3.RData')
+load('data/rand_sexes2kS4.RData')
+load('data/rand_sexes2kS5.RData')
 
 
 
 #build the networks at the sex level using the mixed sexes
-nets_mix_S1 <- mclapply(rand_sexes2kNEWS1, function(y){
+nets_mix_S1 <- mclapply(rand_sexes2kS1, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
-nets_mix_S2 <- mclapply(rand_sexes2kNEWS2, function(y){
+nets_mix_S2 <- mclapply(rand_sexes2kS2, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
-nets_mix_S3 <- mclapply(rand_sexes2kNEWS3, function(y){
+nets_mix_S3 <- mclapply(rand_sexes2kS3, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
-nets_mix_S4 <- mclapply(rand_sexes2kNEWS4, function(y){
+nets_mix_S4 <- mclapply(rand_sexes2kS4, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
-nets_mix_S5 <- mclapply(rand_sexes2kNEWS5, function(y){
+nets_mix_S5 <- mclapply(rand_sexes2kS5, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
 
-nets_mix_O1 <- mclapply(rand_sexes2kNEWO1, function(y){
+nets_mix_O1 <- mclapply(rand_sexes2kO1, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
-nets_mix_O2 <- mclapply(rand_sexes2kNEWO2, function(y){
+nets_mix_O2 <- mclapply(rand_sexes2kO2, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
-nets_mix_O3 <- mclapply(rand_sexes2kNEWO3, function(y){
+nets_mix_O3 <- mclapply(rand_sexes2kO3, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
-nets_mix_O4 <- mclapply(rand_sexes2kNEWO4, function(y){
+nets_mix_O4 <- mclapply(rand_sexes2kO4, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
-nets_mix_O5 <- mclapply(rand_sexes2kNEWO5, function(y){
+nets_mix_O5 <- mclapply(rand_sexes2kO5, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
 
 
 ## confirm that the networks are actually different
-ifelse(any(nets_mix_NEWS1[[1]][[1]]!=nets_mix_NEWS1[[2]][[1]]),
+ifelse(any(nets_mix_S1[[1]][[1]]!=nets_mix_S1[[2]][[1]]),
        print("SUCCESS: the networks are different"),
        print("WARNING: the networks are not different"))
 
 
 ##if multiple objects were required to get to desired simulation number, this combines them. 
-##The network objects are smaller and don't cause as many memory issues
+##The network objects are smaller and don't cause as many memory issues when combined. 
+##NOTE: element 1 in all of the lists is the seed data (i.e., either Original or Same), so was
+## only included in the first list object. 
 nets_mix_S10k<- c(nets_mix_S1,
                       nets_mix_S2[2:2001],
                       nets_mix_S3[2:2001],
@@ -152,9 +153,6 @@ save(nets_mix_clean10kS, file = 'data/nets_mix_clean10kS.RData')
 pb_upload("data/nets_mix_clean10kS.RData",
           name="nets_mix_clean10kS.RData",
 )
-pb_download('nets_mix_clean10kS.RData',
-            dest='data',
-            tag="data.v.1")
 
 
 

@@ -14,11 +14,16 @@ source('prepNets.R')
 
 
 #Load clean networks
-pb_download('nets_mix_clean2k.RData',
+pb_download('nets_mix_clean10kS.RData',
             dest="data",
             tag="data.v.1")
+pb_download('nets_mix_clean10kS.RData',
+            dest="data",
+            tag="data.v.1")
+load('data/nets_mix_clean10kS.RData')
+load('data/nets_mix_clean10kO.RData')
 
-load("data/nets_mix_clean1kboot.Rdata")
+
 
 #calculate the M-H index for species with at least 5 males and 5 females
 distValues5S.df <- distComp(nets_mix_clean10kS,"horn",indiv=5)
@@ -66,50 +71,3 @@ pb_upload("data/diffDist5ZscoreS.RData",
 pb_upload("data/diffDist5ZscoreO.RData",
           name="diffDist5ZscoreO.RData",
           tag="data.v.1")
-
-#diffDist5 <- calcDistZ(distValues5.df,"SpSiteYr",zscore=F)
-
-
-## Test: proportion of species+sites where M-H distance in
-## observed network was different than many of the simulations. The output
-## is the proportion of observations (Sp+Site+Year) where the distance
-## diverged from null expectations more than some threshold 
-## (with the specific threshold used based on the tails of the test)
-
-#overallTest(diffDist5,"distanceZ",zscore=F,tails=2)
-overallTest(diffDist5ZscoreO,"distanceZ",zscore=T,tails=2)
-
-t.tester(diffDist5ZscoreO,'distanceZ')
-  #mean for distribution of zscore values diff from 0 
-  
-#genera where a difference in M-H was observed
-unique(word(unique(diffDist5Zscoreboot$Level[abs(diffDist5Zscore$distanceZ)>1.96]),1))
-  #10 genera
-  #with ST, there are 27 genera
-  
-pb_upload("data/diffDist5ZscorebootST.RData",
-          name="diffDist5ZscorebootST.RData",
-          tag="data.v.1")
-
-pb_download('diffDist5ZscoreO.RData',dest='data',tag='data.v.1')
-
-######-------Section S1: average together sites within a given dataset
-
-load('data/zscore50_5.RData')
-load('data/diffDist5ZscoreS.RData')
-load('data/spec_all.RData')
-metric.ls <- c("degree","weighted.betweenness",
-               "weighted.closeness","d")
-
-#network metrics
-zscore50_5.avged <- zscore_avger(zscore50_5.df,metric.ls)
-
-overallTest(zscore50_5.avged, metric.ls, tails =2,zscore=T)
-t.tester(zscore50_5.avged,metric.ls)
-
-#M-H distance
-diffDist5Zscore.avged <- distZ_avger(diffDist5Zscore)
-
-overallTest(diffDist5Zscore.avged,"distanceZ",zscore=T,tails=2)
-t.tester(diffDist5Zscore.avged,'distanceZ')
-
