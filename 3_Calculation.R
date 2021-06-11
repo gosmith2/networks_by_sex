@@ -16,27 +16,67 @@ library(bipartite)
 library(tidyverse)
 source('prepNets.R')
 
-###------------------
-## Setup
-pb_download("sex_trts_mix5.RData",
-            dest="data",
-            tag="data.v.1")
+####-------------------------------------------####
+#### Calculate node-level network parameters
+####-------------------------------------------####
 
-load("data/sex_trts_mix5.RData")
+## calculate network stats at the node level, output into usable data frame
+# reshuffling threshold is 5 in this case (i.e. there must be at least 5
+# males and 5 females of a given species in a given network for it to be included)
+
+metric.ls <- c("degree","closeness","d")
+
+sex_trts_mix5O <- mclapply(nets_mix_clean10kO,
+                           function(x) calcSpec(x, indiv = 5,index=metric.ls),
+                           mc.cores = cores)
+
+sex_trts_mix5S <- mclapply(nets_mix_clean10kS,
+                           function(x) calcSpec(x, indiv = 5,index=metric.ls),
+                           mc.cores = cores)
+
+
+
+## confirm that the values are different
+ifelse(any(sex_trts_mix5O[[1]]$weighted.closeness!=
+             sex_trts_mix5O[[2]]$weighted.closeness),
+       print("SUCCESS: the network statistics are different between randomizations"),
+       print("WARNING: the network statistics are not different between randomizations")
+)
+
+#save and upload
+save(sex_trts_mix5O,file='data/sex_trts_mix5O.RData')
+save(sex_trts_mix5S,file='data/sex_trts_mix5S.RData')
+
+pb_upload("data/sex_trts_mix5O.RData",
+          name="sex_trts_mix5O.RData",
+          tag="data.v.1")
 
 ##specify the metrics I'll be looking at, number of cores to use
-metric.ls <- c("degree","weighted.betweenness",
-               "weighted.closeness","d")
 cores <- 10
 
 ##clean up the dataset, add some necessary columns to speed things up
-traits5bootT.ls <-
-  mclapply(sex_trts_mix5bootT, function(x){
+traits5S.ls <-
+  mclapply(sex_trts_mix5S, function(x){
   x$SiteYr <- paste(x$Site, x$Year, sep="_")
   x$Sp <- gsub( "_.*$", "", x$GenusSpecies )
   x <- filter(x,x$sex == "m" | x$sex == "f")
   return(x)
 },mc.cores=cores)
+
+traits5O.list <-
+  mclapply(sex_trts_mix5O, function(x){
+    x$SiteYr <- paste(x$Site, x$Year, sep="_")
+    x$Sp <- gsub( "_.*$", "", x$GenusSpecies )
+    x <- filter(x,x$sex == "m" | x$sex == "f")
+    return(x)
+  },mc.cores=cores)
+
+
+traits5S.list <- mclapply(c(1:10001),function(x){
+  traits5S.ls[[x]]$weighted.closeness <- traits5S.lsc[[x]]$weighted.closeness
+  return(traits5S.ls[[x]])
+},mc.cores=cores)
+
 
 
 ###------------------
@@ -45,13 +85,23 @@ traits5bootT.ls <-
 ## [male value - female value]: in the sexDiffs output, large values
 ## indicate that males had larger values than females.
 
-sexDiffs5bootT.df <- makeComp(traits5bootT.ls, metric.ls, comparison = "diff")
+metric2.ls <- c('degree','weighted.closeness','d')
+
+sexDiffs5O.df <- makeComp(traits5O.list, metric2.ls, comparison = "diff")
+sexDiffs5S.df <- makeComp(traits5S.list, metric2.ls, comparison = "diff")
+
 
 ## Saving and uploading after that long step
-save(sexDiffs5bootST.df, file = 'data/sexDiffs5bootST.RData')
+save(sexDiffs5O.df, file = 'data/sexDiffs5O.RData')
+save(sexDiffs5S.df, file = 'data/sexDiffs5S.RData')
 
-pb_upload('data/sexDiffs5boot.RData',
-          name='sexDiffs5boot.RData',
+
+pb_upload('data/sexDiffs5S.RData',
+          name='sexDiffs5S.RData',
+          tag="data.v.1")
+
+pb_upload('data/sexDiffs5O.RData',
+          name='sexDiffs5O.RData',
           tag="data.v.1")
 
 
@@ -64,39 +114,45 @@ pb_upload('data/sexDiffs5boot.RData',
 ## females had higher values than males to a greater degree than expected
 
 ## downloading the output to skip above step 
-pb_download("sexDiffs5boot.df",
-            dest="data",
-            tag="data.v.1")
-load('data/sexDiffs5boot.df')
+#pb_download("sexDiffs5O.df",
+#            dest="data",
+#            tag="data.v.1")
+#load('data/sexDiffs5boot.df')
 
 #sexDiffsProp50_5.df <- calcNullProp50(sexDiffs5.df,
 #                                      metric.ls,
 #                                      zscore=FALSE)
 
 ##generate z-scores
-zscore50_5bootT.df <- calcNullProp50(sexDiffs5bootT.df, 
-                                metric.ls,
+zscore50_O.df <- calcNullProp50(sexDiffs5O.df, 
+                                metric2.ls,
                                 zscore=TRUE)
-save(zscore50_5bootT.df,file='data/zscore50_5bootT.RData')
-pb_upload('data/zscore50_5bootT.RData',name='zscore50_5bootT.RData',tag='data.v.1')
+zscore50_S.df <- calcNullProp50(sexDiffs5S.df, 
+                                   metric2.ls,
+                                   zscore=TRUE)
 
-###------------------
-##Test: proportion of species+sites where m v f difference in
-##observed network was larger than many of the simulations. The output
-##is the proportion of observations (Sp+Site+Year) where the male-female
-## difference diverged from null expectations more than some threshold 
-## (with the specific threshold used based on the tails of the test)
+save(zscore50_O.df,file='data/zscore50_O.RData')
+save(zscore50_S.df,file='data/zscore50_S.RData')
 
-#overallTest(sexDiffsProp50_5.df, metric.ls, tails=2, zscore=F)
 
-overallTest(zscore50_5boot5.cull, metric.ls, tails =2,zscore=T)
+pb_upload('data/zscore50_S.RData',name='zscore50_S.RData',tag='data.v.1')
+pb_upload('data/zscore50_O.RData',name='zscore50_O.RData',tag='data.v.1')
 
-t.tester(zscore50_5boot5.cull,metric.ls)
+
+
+pb_download('zscore50_O.RData',dest='data',tag='data.v.1')
+
+
+
+
+
+
+
 
 #genera where a difference in a network metric was observed
-unique(zscore50_5.df$Genus[abs(zscore50_5.df$degree)>1.96])
-unique(zscore50_5.df$Genus[abs(zscore50_5.df$d)>1.96])
-unique(zscore50_5.df$Genus[abs(zscore50_5.df$weighted.closeness)>1.96])
+unique(zscore50_5O.df$Genus[abs(zscore50_5.df$degree)>1.96])
+unique(zscore50_5O.df$Genus[abs(zscore50_5.df$d)>1.96])
+unique(zscore50_5O.df$Genus[abs(zscore50_5.df$weighted.closeness)>1.96])
 
 
 ######-------------------------------
@@ -112,7 +168,24 @@ pb_upload("data/zscore50_5bootST.RData",
 
 
 
+t1 <- lme(d~dataset,data=zjoinNEWO,random=~1|SiteYr,na.action=na.omit)
+summary(t1)
+
+t2 <- lme.maker(zjoinNEWO,metric.ls,random.eff='SiteYr')
+
 #bootstuff
+
+#
+zscore50_5NEWOST.cull <- subset(zscore50_NEWOST.df,zscore50_NEWOST.df$SpSiteYr %in% zscore50_5.df$SpSiteYr)
+zscore50_5NEWSST.cull <- subset(zscore50_NEWSST.df,zscore50_NEWSST.df$SpSiteYr %in% zscore50_5.df$SpSiteYr)
+zscore50_5NEWDST.cull <- subset(zscore50_NEWDST.df,zscore50_NEWDST.df$SpSiteYr %in% zscore50_5.df$SpSiteYr)
+
+diffDist5ZscoreNEWSST.cull <- subset(diffDist5ZscoreNEWSST,gsub("\\.","_",diffDist5ZscoreNEWSST$Level) %in% diffDist5Zscore$Level)
+diffDist5ZscoreNEWDST.cull <- subset(diffDist5ZscoreNEWDST,gsub("\\.","_",diffDist5ZscoreNEWDST$Level) %in% diffDist5Zscore$Level)
+diffDist5ZscoreNEWOST.cull <- subset(diffDist5ZscoreNEWOST,gsub("\\.","_",diffDist5ZscoreNEWOST$Level) %in% diffDist5Zscore$Level)
+
+
+#
 zscore50_5bootST.cull <- subset(zscore50_5bootST.df,zscore50_5bootST.df$SpSiteYr %in% zscore50_5.df$SpSiteYr)
 zscore50_5bootT.cull <- subset(zscore50_5bootT.df,zscore50_5bootT.df$SpSiteYr %in% zscore50_5.df$SpSiteYr)
 zscore50_5boot5.cull <- subset(zscore50_5boot5.df,zscore50_5boot5.df$SpSiteYr %in% zscore50_5.df$SpSiteYr)

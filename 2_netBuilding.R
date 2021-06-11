@@ -28,90 +28,134 @@ load("data/spec_all.RData")
 ## the number of cores you wish to run the simulation in parallel across 
 cores <- 10
 
+## From the observation data, generate a validation dataframe ("S" for "same") where males and
+## females share the same plant visitation vector. "O" (for "original") is also run through
+## this process, but visitation is left unchanged
+## O and S will be run through the proceeding steps in parallel. 
+spec_allS <- plant.shuffler(spec_all,trt='same')
+spec_allO <- plant.shuffler(spec_all,trt='orig')
+
+
 ## randomize the sexes w/in species w/in sites. observed data is
 ## element 1 of the resulting list, randomized are elements 2-1000
+rand_sexes2kNEWS1 <- ran.gen(spec_allS, 2000, cores)
+rand_sexes2kNEWS2 <- ran.gen(spec_allS, 2000, cores)
+rand_sexes2kNEWS3 <- ran.gen(spec_allS, 2000, cores)
+rand_sexes2kNEWS4 <- ran.gen(spec_allS, 2000, cores)
+rand_sexes2kNEWS5 <- ran.gen(spec_allS, 2000, cores)
+
+rand_sexes2kNEWO1 <- ran.gen(spec_allO, 2000, cores)
+rand_sexes2kNEWO2 <- ran.gen(spec_allO, 2000, cores)
+rand_sexes2kNEWO3 <- ran.gen(spec_allO, 2000, cores)
+rand_sexes2kNEWO4 <- ran.gen(spec_allO, 2000, cores)
+rand_sexes2kNEWO5 <- ran.gen(spec_allO, 2000, cores)
+
+##Note: 2000 was the highest number of iterations that successfully compiled as a single object, 
+##presumably due to memory constraints. Multiple objects were therefore created to get to 
+##higher iteration amounts
+
+#rand_sexes1kNEWO <- ran.gen(spec_allO, 1000, cores)#,boot=TRUE,bootnum=c(4,6,1))
+
+
+save(rand_sexes2kNEWO1,file='data/rand_sexes2kNEWO1.RData')
+save(rand_sexes2kNEWO2,file='data/rand_sexes2kNEWO2.RData')
+save(rand_sexes2kNEWO3,file='data/rand_sexes2kNEWO3.RData')
+save(rand_sexes2kNEWO4,file='data/rand_sexes2kNEWO4.RData')
+save(rand_sexes2kNEWO5,file='data/rand_sexes2kNEWO5.RData')
+
+save(rand_sexes2kNEWS1,file='data/rand_sexes2kNEWS1.RData')
+save(rand_sexes2kNEWS2,file='data/rand_sexes2kNEWS2.RData')
+save(rand_sexes2kNEWS3,file='data/rand_sexes2kNEWS3.RData')
+save(rand_sexes2kNEWS4,file='data/rand_sexes2kNEWS4.RData')
+save(rand_sexes2kNEWS5,file='data/rand_sexes2kNEWS5.RData')
 
 
 
-####BELOW IS THE STEP THAT NOW DOES THE BOOTSTRAPPING
-  #key for bootstraps already done (with rand_sexes <- "x")
-  # x2k = no bootsrapping, original
-  # x1kboot[number] = all sites bootstrapped by the same number. 
-    #NOTE: x1kboot10 was the first attempt; some older objects may still be named just "x1kboot" rather than "x1kboot10"
-    #in current code, this would be replicated by havin the bootnum vector be 3 of the same number (e.g., c(5,5,5))
-  # x2kbootST = stood for Standardized Time, but was actually bootnum=c(2,3,1) for yos, hr, and si
-  # x2kbootT = stands for Time, and is bootnum = c(4,6,1)
-  # these strings after x should carry through to all downstream objects. 
+load('data/rand_sexes2kNEWS1.RData')
+load('data/rand_sexes2kNEWS2.RData')
+load('data/rand_sexes2kNEWS3.RData')
+load('data/rand_sexes2kNEWS4.RData')
+load('data/rand_sexes2kNEWS5.RData')
 
 
-rand_sexes1kbootT <- ran.gen(spec_all, 1000, cores,boot=TRUE,bootnum=c(4,6,1))
-  #Note: 2000 was the highest number of iterations that successfully compiled, 
-  #presumably due to memory constraints. 
-
-
-
-save(rand_sexes1kbootST,file="data/rand_sexes1kbootST.RData")
 
 #build the networks at the sex level using the mixed sexes
-nets_mix_bootT4 <- mclapply(rand_sexes2kbootT4, function(y){
+nets_mix_S1 <- mclapply(rand_sexes2kNEWS1, function(y){
+  breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
+}, mc.cores = cores)
+nets_mix_S2 <- mclapply(rand_sexes2kNEWS2, function(y){
+  breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
+}, mc.cores = cores)
+nets_mix_S3 <- mclapply(rand_sexes2kNEWS3, function(y){
+  breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
+}, mc.cores = cores)
+nets_mix_S4 <- mclapply(rand_sexes2kNEWS4, function(y){
+  breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
+}, mc.cores = cores)
+nets_mix_S5 <- mclapply(rand_sexes2kNEWS5, function(y){
+  breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
+}, mc.cores = cores)
+
+nets_mix_O1 <- mclapply(rand_sexes2kNEWO1, function(y){
+  breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
+}, mc.cores = cores)
+nets_mix_O2 <- mclapply(rand_sexes2kNEWO2, function(y){
+  breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
+}, mc.cores = cores)
+nets_mix_O3 <- mclapply(rand_sexes2kNEWO3, function(y){
+  breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
+}, mc.cores = cores)
+nets_mix_O4 <- mclapply(rand_sexes2kNEWO4, function(y){
+  breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
+}, mc.cores = cores)
+nets_mix_O5 <- mclapply(rand_sexes2kNEWO5, function(y){
   breakNetMix(y, 'Site', 'Year', 'GenusSpeciesMix')
 }, mc.cores = cores)
 
 
 ## confirm that the networks are actually different
-ifelse(any(nets_mix_bootST[[1]][[1]]!=nets_mix_bootST[[2]][[1]]),
+ifelse(any(nets_mix_NEWS1[[1]][[1]]!=nets_mix_NEWS1[[2]][[1]]),
        print("SUCCESS: the networks are different"),
        print("WARNING: the networks are not different"))
 
 
-##if multiple objects were required to get to 1k or 2k simulations, this combined them
-#nets_mix_2kbootT <- c(nets_mix_bootT1,
-#                      nets_mix_bootT2[2:501],
-#                      nets_mix_bootT3[2:501],
-#                      nets_mix_bootT4[2:501])
-                          #  nets_mix_boot203,
-                          #  nets_mix_boot204,
-                          #  nets_mix_boot205,
-                          #  nets_mix_boot206,
-                          #  nets_mix_boot207)
+##if multiple objects were required to get to desired simulation number, this combines them. 
+##The network objects are smaller and don't cause as many memory issues
+nets_mix_S10k<- c(nets_mix_S1,
+                      nets_mix_S2[2:2001],
+                      nets_mix_S3[2:2001],
+                      nets_mix_S4[2:2001],
+                      nets_mix_S5[2:2001])
+
+nets_mix_O10k<- c(nets_mix_O1,
+                  nets_mix_O2[2:2001],
+                  nets_mix_O3[2:2001],
+                  nets_mix_O4[2:2001],
+                  nets_mix_O5[2:2001])
+
 
 #remove all networks with too few interactions to calculate metrics
-nets_mix_clean2kbootT <- mclapply(nets_mix_2kbootT, function(x){
+nets_mix_clean10kO <- mclapply(nets_mix_O10k, function(x){
+  x[sapply(x, function(y) all(dim(y) > 1))]
+}, mc.cores=cores)
+
+nets_mix_clean10kS <- mclapply(nets_mix_S10k, function(x){
   x[sapply(x, function(y) all(dim(y) > 1))]
 }, mc.cores=cores)
 
 #save the networks themselves and upload them
-save(nets_mix_clean2kbootT, file = 'data/nets_mix_clean2kbootT.RData')
-pb_upload("data/nets_mix_clean2kbootT.RData",
-          name="nets_mix_clean2kbootT.RData",
+save(nets_mix_clean10kO, file = 'data/nets_mix_clean10kO.RData')
+pb_upload("data/nets_mix_clean10kO.RData",
+          name="nets_mix_clean10kO.RData",
           )
-pb_download('nets_mix_clean2k.RData',
+save(nets_mix_clean10kS, file = 'data/nets_mix_clean10kS.RData')
+pb_upload("data/nets_mix_clean10kS.RData",
+          name="nets_mix_clean10kS.RData",
+)
+pb_download('nets_mix_clean10kS.RData',
             dest='data',
             tag="data.v.1")
 
-####-------------------------------------------####
-#### Calculate node-level network parameters
-####-------------------------------------------####
 
-## calculate network stats at the node level, output into usable data frame
-# reshuffling threshold is 5 in this case (i.e. there must be at least 5
-# males and 5 females of a given species in a given network for it to be included)
-sex_trts_mix5bootT <- mclapply(nets_mix_clean2kbootT,
-                          function(x) calcSpec(x, indiv = 5),
-                          mc.cores = cores)
-
-## confirm that the values are different
-ifelse(any(sex_trts_mix5bootST[[1]]$weighted.closeness!=
-             sex_trts_mix5bootST[[2]]$weighted.closeness),
-       print("SUCCESS: the network statistics are different between randomizations"),
-       print("WARNING: the network statistics are not different between randomizations")
-)
-
-#save and upload
-save(sex_trts_mix5bootT,file='data/sex_trts_mix5bootT.RData')
-
-pb_upload("data/sex_trts_mix5bootST.RData",
-          name="sex_trts_mix5bootST.RData",
-          tag="data.v.1")
 
 
