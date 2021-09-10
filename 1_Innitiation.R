@@ -1,7 +1,7 @@
 ## 1: Innitiation and dataset compiling
 
 ## Loads necessary libraries for the whole analysis process, downloads and cleans the original data from the Yosemite,
-#Hedgerow, and Sky Islands, removing unused samples (e.g., those not caught with nets) and adds necessary columns. 
+#Hedgerow, and Sky Islands datasets, removing unused samples (e.g., those not caught with nets) and adds necessary columns. 
 #It then compiles these datasets into a single object.
 
 ## setwd("~/Dropbox/networks_by_sex")

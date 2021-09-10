@@ -1,14 +1,9 @@
-#3: Calculations and testing
+#3: Calculations
 
 #Runs analyses on the species-level network parameters calculated in
 #2_netBuilding.R to compare males and females within the observed and
 #simulated networks. 
 
-################################################
-
-#Species level network traits
-
-################################################
 
 library(parallel)
 library(piggyback)

@@ -79,10 +79,10 @@ summary(md.S)
 ##Test: Do males and females differ more in species that are more generalized 
 ## across the dataset (i.e., higher rarefied degree)?
 
-deg.allO <- lme(degree ~ rareDeg+rareDeg+plants+dataset,data=zjoinO,random=~1|SiteYr,na.action=na.omit)
+deg.allO <- lme(degree ~ rareDeg+plants+dataset,data=zjoinO,random=~1|SiteYr,na.action=na.omit)
 summary(deg.allO)
 
-d.allO <- lme(d ~ rareDeg+rareDeg+plants+dataset,data=zjoinO,random=~1|SiteYr,na.action=na.omit)
+d.allO <- lme(d ~ rareDeg+plants+dataset,data=zjoinO,random=~1|SiteYr,na.action=na.omit)
 summary(d.allO)
 
 dist.allO <- lme(dist ~ rareDeg+plants+dataset,data=zjoinO,random=~1|SiteYr,na.action=na.omit)
@@ -93,11 +93,11 @@ summary(clo.allO)
 
 
 #-----
-#S - no significant effects anywhere, regardless of plants or no plants
-deg.allS <- lme(degree ~ rareDeg+rareDeg+plants+dataset,data=zjoinS,random=~1|SiteYr,na.action=na.omit)
+#S - no significant effects anywhere
+deg.allS <- lme(degree ~ rareDeg+plants+dataset,data=zjoinS,random=~1|SiteYr,na.action=na.omit)
 summary(deg.allS)
 
-d.allS <- lme(d ~ rareDeg+rareDeg+plants+dataset,data=zjoinS,random=~1|SiteYr,na.action=na.omit)
+d.allS <- lme(d ~ rareDeg+plants+dataset,data=zjoinS,random=~1|SiteYr,na.action=na.omit)
 summary(d.allS)
 
 dist.allS <- lme(dist ~ rareDeg+plants+dataset,data=zjoinS,random=~1|SiteYr,na.action=na.omit)

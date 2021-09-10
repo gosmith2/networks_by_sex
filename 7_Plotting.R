@@ -1,7 +1,8 @@
-## 6: Plotting
+## 7: Plotting
 
-## Combines the node-level and M-H distances into a single dataframe, then plots
-## the node-level and network-level violin plots
+## Plots the node-level and network-level violin plots. Also calculates metrics 
+## describing the dataset as a whole, such as the total number of networks and species. 
+
 
 
 pb_download("zscore50_O.RData",

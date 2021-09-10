@@ -52,7 +52,7 @@ rand_sexes2kO5 <- ran.gen(spec_allO, 2000, cores)
 
 ##Note: 2000 was the highest number of iterations that successfully compiled as a single object, 
 ##presumably due to memory constraints. Multiple objects were therefore created to get to 
-##higher iteration amounts
+##higher iteration numbers
 
 
 #save the objects to pause and load later
