@@ -6,8 +6,9 @@ library(maptools)     # tools for manipulating spatial data
 library(ggmap)        # for downloading maps 
 library(rgeos)        # more map tools
 library(rworldmap)
-library(measurements)
+#library(measurements)
 library(ggspatial)
+library()
 
 load("data/specimens-hr.RData",verbose=TRUE) 
 #For whatever reason, resulting df is called "dd"
@@ -15,12 +16,17 @@ spec.h<-dd
 
 spec.y <-read.csv("data/specimens-yos.csv")
 
+#the conversions downstream breaks when strsplit encounters
+#issues, so take out these GPS blanks:
+spec.h$GPS[spec.h$GPS=="" | spec.h$GPS=="N W"] <- NA
+
 spec.h$lat1 <- sub(" W.*$", "", spec.h$GPS)
 spec.h$lat1 <- substring(spec.h$lat1,2)
 spec.h$long1 <- sub("^[^W]*", "", spec.h$GPS)
 spec.h$long1 <- substring(spec.h$long1,2)
-spec.h$long <- measurements::conv_unit(spec.h$long1, from = 'deg_dec_min', to = "dec_deg")
-spec.h$lat <- measurements::conv_unit(spec.h$lat1, from = 'deg_dec_min', to = "dec_deg")
+long.list <- !is.na(spec.h$long1)
+spec.h$long[long.list] <- measurements::conv_unit(spec.h$long1[long.list], from = 'deg_dec_min', to = "dec_deg")
+spec.h$lat[long.list] <- measurements::conv_unit(spec.h$lat1[long.list], from = 'deg_dec_min', to = "dec_deg")
 spec.h$Lat <- as.numeric(spec.h$lat)
 spec.h$Long <- as.numeric(spec.h$long*-1)
 head(spec.h$Long)
