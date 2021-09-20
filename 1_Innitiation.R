@@ -7,7 +7,6 @@
 ## setwd("~/Dropbox/networks_by_sex")
 
 rm(list=ls())
-library(piggyback) 
 library(bipartite)
 library(tidyverse) 
 library(parallel) 
@@ -19,41 +18,6 @@ library(reshape2)
 
 source('prepNets.R')
 
-
-##--------Authenticate so that you can download large datasets with piggyback:
-
-#Copy the string below without the hash:
-# GITHUB_PAT=7423a37de1b5d3913210273a64d0d89e65e5c8f9
-  #This is the git token that will give piggyback access to the data releases.
-
-#open your r environment document
-usethis::edit_r_environ()
-
-  #Paste the string you coppied with the git token. 
-  #Press enter to leave 1 blank space below the token
-  #save and close the environment doc. 
-  #Restart R and run from below
-
-Sys.getenv("GITHUB_PAT")
-
-#For more info throughout this, see
-#https://cran.r-project.org/web/packages/piggyback/vignettes/intro.html
-
-
-
-#----Download datasets
-
-pb_download("specimens-yos.csv",
-            dest="data",
-            tag="data.v.1")
-
-pb_download("specimens-hr.RData",
-            dest="data",
-            tag="data.v.1")
-
-pb_download("specimens-si.csv",
-            dest="data",
-            tag="data.v.1")
 
 ####--------------------------####
 #### YOSEMITE
@@ -194,9 +158,6 @@ bind_rows(select(spec.y,keeps),
           select(spec.h,keeps),
           select(spec.s,keeps)) -> spec_all
 
-#save compiled dataset, upload to release
+#save compiled dataset
 save(spec_all,file='data/spec_all.RData')
 
-#pb_upload("data/spec_all.RData",
-#          name="spec_all.RData",
-#          tag="data.v.1")

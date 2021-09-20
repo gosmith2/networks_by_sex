@@ -6,7 +6,6 @@
 ## the null is calculated. 
 
 library(parallel)
-library(piggyback)
 library(vegan)
 library(tidyverse) 
 library(stringr)
@@ -14,12 +13,7 @@ source('prepNets.R')
 
 
 #Load clean networks
-pb_download('nets_mix_clean10kS.RData',
-            dest="data",
-            tag="data.v.1")
-pb_download('nets_mix_clean10kS.RData',
-            dest="data",
-            tag="data.v.1")
+
 load('data/nets_mix_clean10kS.RData')
 load('data/nets_mix_clean10kO.RData')
 
@@ -48,10 +42,6 @@ save(distValues5O.df,file='data/distValues5O.RData')
 save(distValues5S.df,file='data/distValues5S.RData')
 
 
-#pb_upload("data/distValues5O.RData",
-#          name="distValues5O.RData",
-#          tag="data.v.1")
-
 ## ****************************************************************
 #download to the previous skip step
 pb_download("distValues5O.RData",
@@ -65,9 +55,3 @@ diffDist5ZscoreS <- calcDistZ(distValues5S.df,"SpSiteYr",zscore=T)
 save(diffDist5ZscoreS,file='data/diffDist5ZscoreS.RData')
 save(diffDist5ZscoreO,file='data/diffDist5ZscoreO.RData')
 
-#pb_upload("data/diffDist5ZscoreS.RData",
-#          name="diffDist5ZscoreS.RData",
-#          tag="data.v.1")
-#pb_upload("data/diffDist5ZscoreO.RData",
-#          name="diffDist5ZscoreO.RData",
-#          tag="data.v.1")

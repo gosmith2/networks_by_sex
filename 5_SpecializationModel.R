@@ -20,8 +20,8 @@ load('data/spec_all.RData')
 load('data/spec_h.RData')
 load('data/spec_y.RData')
 load('data/spec_s.RData')
-load('data/nets_mix_clean10kO.RData')
-load('data/nets_mix_clean10kS.RData')
+load('data/nets_mix_clean_SmallO.RData') #these files mostly needed for organizational reasons here; the full iteration version is not necessary. 
+load('data/nets_mix_clean_SmallS.RData')
 
 
 
@@ -45,19 +45,12 @@ load('data/rare.RData')
 metric2.ls <- c("degree","weighted.closeness","d")
 
 
-zjoinO <- zscore_rare_joiner(zscore50_O.df,diffDist5ZscoreO,nets_mix_clean10kO,spec_all,metric2.ls,"O")
-zjoinS <- zscore_rare_joiner(zscore50_S.df,diffDist5ZscoreS,nets_mix_clean10kS,spec_all,metric2.ls,"S")
+zjoinO <- zscore_rare_joiner(zscore50_O.df,diffDist5ZscoreO,nets_mix_clean_SmallO,spec_all,metric2.ls,"O")
+zjoinS <- zscore_rare_joiner(zscore50_S.df,diffDist5ZscoreS,nets_mix_clean_SmallS,spec_all,metric2.ls,"S")
 
 save(zjoinO,file='data/zjoinO.RData')
 save(zjoinS,file='data/zjoinS.RData')
 
-
-#pb_upload('data/zjoinO.RData',
-#          name="zjoinO.RData",
-#          tag='data.v.1')
-#pb_upload('data/zjoinS.RData',
-#          name="zjoinS.RData",
-#          tag='data.v.1')
 
 ###------------------
 ##Test: do the z-score distributions of the node-level metrics differ from zero?

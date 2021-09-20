@@ -4,15 +4,6 @@
 ## describing the dataset as a whole, such as the total number of networks and species. 
 
 
-
-pb_download("zjoinO.RData",
-            dest="data",
-            tag="data.v.1")
-pb_download("zNetO.RData",
-            dest="data",
-            tag="data.v.1")
-
-
 load('data/zjoinO.RData')
 load('data/zjoinS.RData')
 

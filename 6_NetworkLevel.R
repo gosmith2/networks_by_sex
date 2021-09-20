@@ -15,14 +15,8 @@ source('prepNets.R')
 #### Prep for networklevel analyses
 ####----------------------------####
 
-pb_download("nets_mix_clean10kO.RData",
-            dest="data",
-            tag="data.v.1")
-load('data/nets_mix_clean10kO.RData')
 
-pb_download("nets_mix_clean10kS.RData",
-            dest="data",
-            tag="data.v.1")
+load('data/nets_mix_clean10kO.RData')
 
 load('data/nets_mix_clean10kS.RData')
 
@@ -116,21 +110,10 @@ sexlvlProp50ZS <- sexlvlProp50ZS[,c(1:4,6,7,5)]
 save(sexlvlProp50ZO,file="data/sexlvlProp50ZO.RData")
 save(sexlvlProp50ZS,file="data/sexlvlProp50ZS.RData")
 
-#pb_upload('data/sexlvlProp50ZS.RData',
-#          name="sexlvlProp50ZS.RData",
-#          tag='data.v.1')
-#pb_upload('data/sexlvlProp50ZO.RData',
-#          name="sexlvlProp50ZO.RData",
-#          tag='data.v.1')
-
 
 ## ****************************************************************
-#pb_download("sexlvlProp50ZS.RData",
-#            dest="data",
-#            tag="data.v.1")
-#pb_download("sexlvlProp50ZO.RData",
-#            dest="data",
-#            tag="data.v.1")
+
+
 load('data/sexlvlProp50ZS.RData')
 load('data/sexlvlProp50ZO.RData')
 
@@ -142,12 +125,7 @@ zNetS <- zscore_net_joiner(sexlvlProp50ZS,nets_mix_clean10kS,spec_all,"S")
 save(zNetO,file='data/zNetO.RData')
 save(zNetS,file='data/zNetS.RData')
 
-pb_upload('data/zNetO.RData',
-          name="zNetO.RData",
-          tag='data.v.1')
-pb_upload('data/zNetS.RData',
-          name="zNetS.RData",
-          tag='data.v.1')
+#ANALYSIS STARTS HERE
 
 ##Test: Do network-level metrics differ between the observed and simulated networks?
 

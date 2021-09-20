@@ -7,12 +7,7 @@
 
 ## all working directories are relative to the gitrepo 
 library(parallel)
-library(piggyback)
 source("prepNets.R")
-
-pb_download("spec_all.RData",
-            dest="data",
-            tag="data.v.1")
 
 load("data/spec_all.RData")
 
@@ -144,16 +139,17 @@ nets_mix_clean10kS <- mclapply(nets_mix_S10k, function(x){
   x[sapply(x, function(y) all(dim(y) > 1))]
 }, mc.cores=cores)
 
-#save the networks themselves and upload them
+#save the networks
 save(nets_mix_clean10kO, file = 'data/nets_mix_clean10kO.RData')
-#pb_upload("data/nets_mix_clean10kO.RData",
-#          name="nets_mix_clean10kO.RData",
-#          )
+
 save(nets_mix_clean10kS, file = 'data/nets_mix_clean10kS.RData')
-#pb_upload("data/nets_mix_clean10kS.RData",
-#          name="nets_mix_clean10kS.RData",
-#)
 
 
+#save smaller lists of the networks for use later / github
+  #Note: even at 500 reps these files are too large for github
+nets_mix_clean_SmallO <- nets_mix_clean10kO[1:400]
+save(nets_mix_clean_SmallO,file='data/nets_mix_clean_SmallO.RData')
 
+nets_mix_clean_SmallS <- nets_mix_clean10kS[1:400]
+save(nets_mix_clean_SmallS,file='data/nets_mix_clean_SmallS.RData')
 

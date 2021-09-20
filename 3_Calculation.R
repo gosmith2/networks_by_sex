@@ -6,21 +6,16 @@
 
 
 library(parallel)
-library(piggyback)
 library(bipartite)
 library(tidyverse)
 source('prepNets.R')
 
-#download and load the observed networks
-pb_download("nets_mix_clean10kO.RData",
-            dest="data",
-            tag="data.v.1")
+#load the observed networks.
+  #NOTE: everything will work with the "small" version of these files, but
+  #for true replication you'll have to locally make your own files with >400 iterations.
 load("data/nets_mix_clean10kO.RData")
 
-#download + load the validation networks
-pb_download("nets_mix_clean10kS.RData",
-            dest="data",
-            tag="data.v.1")
+#load the validation networks. 
 load("data/nets_mix_clean10kS.RData")
 
 ####-------------------------------------------####
@@ -111,9 +106,6 @@ save(sexDiffs5S.df, file = 'data/sexDiffs5S.RData')
 ## females had higher values than males to a greater degree than expected
 
 ## downloading the output to skip above calculation steps 
-#pb_download("sexDiffs5O.RData",
-#            dest="data",
-#            tag="data.v.1")
 #load('data/sexDiffs5O.RData')
 
 
@@ -128,7 +120,4 @@ zscore50_S.df <- calcNullProp50(sexDiffs5S.df,
 save(zscore50_O.df,file='data/zscore50_O.RData')
 save(zscore50_S.df,file='data/zscore50_S.RData')
 
-
-#pb_upload('data/zscore50_S.RData',name='zscore50_S.RData',tag='data.v.1')
-#pb_upload('data/zscore50_O.RData',name='zscore50_O.RData',tag='data.v.1')
 
