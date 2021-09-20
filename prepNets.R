@@ -106,12 +106,11 @@ breakNetMix <- function(spec.dat, site, year, mix){
 ## with site status and ypr
 ## takes networks and specimen data
 
-calcSpec <- function(nets, indiv = 1, lvl = "SpSiteYr"){
+calcSpec <- function(nets, indiv = 1, lvl = "SpSiteYr",index=c('degree','d','weighted.closeness')){
   ## applies specieslevel from bipartite to networks
   species.lev <- lapply(nets, function(x){
-    print(1)
     #calculate values
-    sl <- specieslevel(x)
+    sl <- specieslevel(x,index=index)
     
     #keep only species with observations >= indiv
     x <- as.data.frame(x)
@@ -216,6 +215,85 @@ ran.sex <- function(spec.data){
   })
   return(do.call(rbind, unlist(col.ls, recursive=FALSE)))
 }
+
+
+plant.shuffler <- function(spec.data, trt){
+  col.ls <- lapply(unique(spec.data$SiteYr),function(x){
+    net <- filter(spec.data,SiteYr==x)
+    sp.col <- lapply(unique(net$GenusSpecies), function(y){
+      sp<-filter(net,net$GenusSpecies==y)
+      
+      sp <- filter(sp,sp$Sex %in% c("f","m"))
+      
+      if(length(unique(sp$Sex)) !=1){
+        ##randomize the sexes in a new column, paste together with species name
+        #sp$MixSex<-sample(sp$Sex,replace=FALSE)
+        
+        ##replace plant column with one where males and females share same visitation vector.
+          ##this method is random; can't think of a great way right now to do a more concious 
+          ##50/50 split that wouldn't run into issues with plants visited only once
+          ##This should definitely smooth things out to some degree though
+        if(trt=='same'){
+          SamePlant <- sample(sp$PlantGenusSpecies, replace=FALSE)
+          sp$PlantGenusSpecies <- SamePlant
+          
+        #replace plant column with one where visitation has no overlaps between males and females
+        } else if(trt=='diff'){
+  
+          if(any(unique(sp$PlantGenusSpecies[sp$Sex=='m']) %in% unique(sp$PlantGenusSpecies[sp$Sex=='f'])) 
+             & length(unique(sp$PlantGenusSpecies))>1){
+            
+            ##make list of plants visited by the species
+            plants <- unique(sp$PlantGenusSpecies)
+            
+            over <- unique(sp$PlantGenusSpecies[sp$Sex=='f'])[unique(sp$PlantGenusSpecies[sp$Sex=='f']) 
+                                                              %in% unique(sp$PlantGenusSpecies[sp$Sex=='m'])]
+            
+            #solve issue where all plant species overlap
+            if(length(over)<length(unique(sp$PlantGenusSpecies))){
+              
+              ##So that things don't break, first assign the overlapping plants to the sex with lower degree
+              ##lower than and equal biases slightly towards females having higher degree
+              if(length(unique(sp$PlantGenusSpecies[sp$Sex=='m']))
+                 >=length(unique(sp$PlantGenusSpecies[sp$Sex=='f']))){
+                
+                fPlants <- unique(sp$PlantGenusSpecies[sp$Sex=='f'])
+                mPlants <- plants[!plants %in% fPlants]
+                
+              } else{
+                mPlants <- unique(sp$PlantGenusSpecies[sp$Sex=='m'])
+                fPlants <- plants[!plants %in% mPlants]
+              }
+              
+            } else {
+              fPlants <- sample(unique(sp$PlantGenusSpecies[sp$Sex=='f']),size = length(unique(sp$PlantGenusSpecies))/2)
+              mPlants <- plants[!plants %in% fPlants]
+              
+            }
+            ##assign individuals to those plants
+            #sp$DiffPlant <- sp$PlantGenusSpecies
+            sp$PlantGenusSpecies[sp$Sex=='m' & sp$PlantGenusSpecies %notin% mPlants] <- sample(mPlants,size=length(sp$PlantGenusSpecies[sp$Sex=='m' & sp$PlantGenusSpecies %notin% mPlants]),replace=T)
+            sp$PlantGenusSpecies[sp$Sex=='f' & sp$PlantGenusSpecies %notin% fPlants] <- sample(fPlants,size=length(sp$PlantGenusSpecies[sp$Sex=='f' & sp$PlantGenusSpecies %notin% fPlants]),replace=T)
+            
+          } else {
+            sp$PlantGenusSpecies <- sp$PlantGenusSpecies
+          }
+        } else {
+          sp$PlantGenusSpecies <- sp$PlantGenusSpecies
+        }
+
+      } else {
+        sp$PlantGenusSpecies <- sp$PlantGenusSpecies
+      }
+      
+      return(sp)
+      })
+    })
+  return(do.call(rbind,unlist(col.ls,recursive=FALSE)))
+}
+
+
+`%notin%` <- Negate(`%in%`)
 
 removeNets <- function(spec.data) {
   #narrows down to each site+year combo, then only keeps the networks
@@ -791,6 +869,19 @@ t.tester <- function(data,metric){
   do.call(rbind,mets)
 }
 
+lme.maker <- function(data,metric,random.eff){
+  mets <- lapply(metric,function(x){
+    browser()
+    lme.met <- lme(data[[,x]]~1,random=~1|data[,random.eff])
+    lmes <- summary(lme.met)
+    df <- as.data.frame(lmes$tTable)
+    df$metric <- x
+    df$mean <- mean(data[,x],na.rm=T)
+    return(df)
+  })
+  do.call(rbind,mets)
+}
+
 wholeNet <- function(sampData){
   obs <- sampData[sampData$Sex=="f",]
   agg.spec <- aggregate(list(abund=obs$GenusSpecies),
@@ -815,7 +906,7 @@ calcRareDeg <- function(sampData, name){
   return(rare.df)
 }
 
-zscore_rare_joiner <- function(nodez,distz,networks,metric){
+zscore_rare_joiner <- function(nodez,distz,networks,meta,metric, model){
   nodez$dist <- distz$distanceZ[match(nodez$SpSiteYr,gsub("\\.","_",distz$Level))]
   nodez$GenusSpecies <- word(nodez$SpSiteYr,1,sep = "_")
   nodez$Genus <- word(nodez$GenusSpecies,1,sep=" ")
@@ -834,8 +925,25 @@ zscore_rare_joiner <- function(nodez,distz,networks,metric){
     dim <-dim(net)
     return(dim[1])
   }))
+  nodez$dataset <- as.factor(meta$dataset[match(nodez$SiteYr,gsub(" ","_",meta$SiteYr))])
+  nodez$Family <- meta$Family[match(nodez$GenusSpecies,meta$GenusSpecies)]
+  nodez$model <- as.factor(rep(model))
   return(nodez)
 }
+
+zscore_net_joiner <- function(netz,networks,meta, model){
+  netz$plants <- unlist(lapply(netz$SpSiteYr,function(x){
+    nets <- networks[[1]]
+    net <- nets[[x]]
+    dim <-dim(net)
+    return(dim[1])
+  }))
+  netz$dataset <- as.factor(meta$dataset[match(netz$SpSiteYr,gsub(" ",".",meta$SiteYr))])
+  netz$model <- as.factor(rep(model))
+  return(netz)
+}
+
+  
 
 calcMetric <- function(dat.web, ...) {
   ## calculates modularity
