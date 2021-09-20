@@ -5,25 +5,25 @@
 
 
 
-pb_download("zscore50_O.RData",
+pb_download("zjoinO.RData",
             dest="data",
             tag="data.v.1")
-pb_download("diffDist5ZscoreO.RData",
+pb_download("zNetO.RData",
             dest="data",
             tag="data.v.1")
-pb_download("sexlvlProp50Z.RData",
-            dest="data",
-            tag="data.v.1")
-load("data/zscore50_5.RData")
-load("data/diffDist5Zscoreboot.RData")
-load("data/sexlvlProp50Z.RData")
-load("data/nets_mix_clean.RData")
-load('data/spec_all.RData')
+
+
+load('data/zjoinO.RData')
+load('data/zjoinS.RData')
+
+load('data/zNetO.RData')
+load('data/zNetS.RData')
 
 library(reshape2)
 library(ggplot2)
 library(stringr)
 library(tidyverse)
+library(viridis)
 
 ##----------------
 #Node-level plot:
@@ -37,7 +37,7 @@ nodelvlmeltS<-melt(zjoinS[,c(1,3,2,5,4)],
 
 
 #Node-level plot
-ggplot(nodelvlmeltS,aes(x=variable,y=value))+
+ggplot(nodelvlmeltO,aes(x=variable,y=value))+
   geom_violin(draw_quantiles=0.5,size=0.9,aes(fill=variable),show.legend = F) +
   scale_fill_viridis(discrete=T,alpha=0.5)+
   #geom_jitter(size=1,width=.2,shape=21) + #Alternative to add actual datapoints to the graph
@@ -64,7 +64,7 @@ netMeltO <- melt(zNetO[,c(2,1,3,4,5,6,7)],ID='SpSiteYr')
 netMeltS <- melt(zNetS[,c(2,1,3,4,5,6,7)],ID='SpSiteYr')
 
 
-ggplot(netMeltS,aes(x=variable,y=value,fill=variable,alpha=0.5))+
+ggplot(netMeltO,aes(x=variable,y=value,fill=variable,alpha=0.5))+
     theme(panel.background = NULL)+
     geom_violin(draw_quantiles=0.5,size=0.9,show.legend = F) +
     scale_fill_manual(values=c("#51127CFF","#B63679FF","#FB8861FF","#FB8861FF","#FCFDBFFF","#FCFDBFFF"))+
@@ -89,14 +89,16 @@ ggplot(netMeltS,aes(x=variable,y=value,fill=variable,alpha=0.5))+
 
 ##-----Summary of dataset--------
 
-#total networks in dataset
 load('data/spec_all.RData')
+load('data/nets_mix_clean10kO.RData')
+
+
+#total networks in dataset
 length(unique(spec_all$SiteYr))
   #312
 
 
 #total networks used in analyses (i.e., had at least 1 species where both sexes present)
-load('data/nets_mix_clean2k.RData')
 length(nets_mix_clean10kO[[1]])
   #256
 
@@ -120,7 +122,7 @@ length(unique(paste(spec_all_analysis$PlantGenusSpecies,
 ##--Supplementary table: Species presence in different datasets
 
 #list of sites with at least 1 species having both sexes
-finalsites.ls <- sub("\\.", " ",names(nets_mix_clean10k[[1]]))
+finalsites.ls <- sub("\\.", " ",names(nets_mix_clean10kO[[1]]))
 
 spec_final <- spec_all[spec_all$SiteYr %in% finalsites.ls,]
 

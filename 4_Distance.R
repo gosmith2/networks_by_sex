@@ -48,9 +48,9 @@ save(distValues5O.df,file='data/distValues5O.RData')
 save(distValues5S.df,file='data/distValues5S.RData')
 
 
-pb_upload("data/distValues5S.RData",
-          name="distValues5S.RData",
-          tag="data.v.1")
+#pb_upload("data/distValues5O.RData",
+#          name="distValues5O.RData",
+#          tag="data.v.1")
 
 ## ****************************************************************
 #download to the previous skip step
@@ -65,9 +65,9 @@ diffDist5ZscoreS <- calcDistZ(distValues5S.df,"SpSiteYr",zscore=T)
 save(diffDist5ZscoreS,file='data/diffDist5ZscoreS.RData')
 save(diffDist5ZscoreO,file='data/diffDist5ZscoreO.RData')
 
-pb_upload("data/diffDist5ZscoreS.RData",
-          name="diffDist5ZscoreS.RData",
-          tag="data.v.1")
-pb_upload("data/diffDist5ZscoreO.RData",
-          name="diffDist5ZscoreO.RData",
-          tag="data.v.1")
+#pb_upload("data/diffDist5ZscoreS.RData",
+#          name="diffDist5ZscoreS.RData",
+#          tag="data.v.1")
+#pb_upload("data/diffDist5ZscoreO.RData",
+#          name="diffDist5ZscoreO.RData",
+#          tag="data.v.1")

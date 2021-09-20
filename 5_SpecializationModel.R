@@ -5,9 +5,12 @@
 ## whether their distirbutions differ from 0. Finally, the 
 ## z-score values are regressed against the rarefied degree.
 
-library(lme4)
+library(nlme)
 library(fossil)
 library(tidyverse)
+library(stringr)
+source('prepNets.R')
+
 
 load('data/zscore50_O.RData')
 load('data/zscore50_S.RData')
@@ -33,7 +36,7 @@ rare.df$r.deg1 <- ifelse(is.na(rare.df$rare.hr),
                          ifelse(is.na(rare.df$rare.si),
                                 rare.df$rare.yo,
                                 rare.df$rare.si),
-                         rare.df$rare.hr)
+                         rare.df$rare.hr) 
 
 save(rare.df,file='data/rare.RData')
 load('data/rare.RData')
@@ -45,6 +48,16 @@ metric2.ls <- c("degree","weighted.closeness","d")
 zjoinO <- zscore_rare_joiner(zscore50_O.df,diffDist5ZscoreO,nets_mix_clean10kO,spec_all,metric2.ls,"O")
 zjoinS <- zscore_rare_joiner(zscore50_S.df,diffDist5ZscoreS,nets_mix_clean10kS,spec_all,metric2.ls,"S")
 
+save(zjoinO,file='data/zjoinO.RData')
+save(zjoinS,file='data/zjoinS.RData')
+
+
+#pb_upload('data/zjoinO.RData',
+#          name="zjoinO.RData",
+#          tag='data.v.1')
+#pb_upload('data/zjoinS.RData',
+#          name="zjoinS.RData",
+#          tag='data.v.1')
 
 ###------------------
 ##Test: do the z-score distributions of the node-level metrics differ from zero?

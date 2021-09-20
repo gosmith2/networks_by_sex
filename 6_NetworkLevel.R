@@ -15,16 +15,22 @@ source('prepNets.R')
 #### Prep for networklevel analyses
 ####----------------------------####
 
-pb_download("nets_mix_clean2k.RData",
+pb_download("nets_mix_clean10kO.RData",
+            dest="data",
+            tag="data.v.1")
+load('data/nets_mix_clean10kO.RData')
+
+pb_download("nets_mix_clean10kS.RData",
             dest="data",
             tag="data.v.1")
 
-load('data/nets_mix_clean2k.RData')
+load('data/nets_mix_clean10kS.RData')
+
 
 metric.net <- c('NODF',
                 'H2',
                 'vulnerability')
-#N = 1999
+
 cores = 10
 
 
@@ -41,10 +47,6 @@ sexlvlS.net <- mclapply(nets_mix_clean10kS,
 save(sexlvlS.net,file="data/sexlvlS.RData")
 save(sexlvlO.net,file="data/sexlvlO.RData")
 
-
-pb_upload("data/sexlvlboot.RData",
-          name="sexlvlboot.RData",
-          tag = "data.v.1")
 
 #robustness calculations. Species go extinct by degree, extinctions of female pollinators
 #also result in the extinction of males of the same species. 
@@ -76,21 +78,9 @@ save(rob1O,file='data/rob1O.RData')
 save(rob1S,file='data/rob1S.RData')
 
 
-pb_upload('data/rob1.RData',
-            name='rob1a.RData',
-            tag='data.v.1')
-
 
 
 ## ****************************************************************
-
-pb_download("sexlvl.RData",
-          dest="data",
-          tag = "data.v.1")
-
-pb_download('rob1.RData',
-            dest='data',
-            tag='data.v.1')
 
 sexmet <- names(sexlvlO.net[[1]])[1:4]
 
@@ -126,21 +116,21 @@ sexlvlProp50ZS <- sexlvlProp50ZS[,c(1:4,6,7,5)]
 save(sexlvlProp50ZO,file="data/sexlvlProp50ZO.RData")
 save(sexlvlProp50ZS,file="data/sexlvlProp50ZS.RData")
 
-pb_upload('data/sexlvlProp50ZS.RData',
-          name="sexlvlProp50ZS.RData",
-          tag='data.v.1')
-pb_upload('data/sexlvlProp50ZO.RData',
-          name="sexlvlProp50ZO.RData",
-          tag='data.v.1')
+#pb_upload('data/sexlvlProp50ZS.RData',
+#          name="sexlvlProp50ZS.RData",
+#          tag='data.v.1')
+#pb_upload('data/sexlvlProp50ZO.RData',
+#          name="sexlvlProp50ZO.RData",
+#          tag='data.v.1')
 
 
 ## ****************************************************************
-pb_download("sexlvlProp50ZS.RData",
-            dest="data",
-            tag="data.v.1")
-pb_download("sexlvlProp50ZO.RData",
-            dest="data",
-            tag="data.v.1")
+#pb_download("sexlvlProp50ZS.RData",
+#            dest="data",
+#            tag="data.v.1")
+#pb_download("sexlvlProp50ZO.RData",
+#            dest="data",
+#            tag="data.v.1")
 load('data/sexlvlProp50ZS.RData')
 load('data/sexlvlProp50ZO.RData')
 
@@ -149,7 +139,15 @@ sexmet <- colnames(sexlvlProp50ZO)[1:6]
 zNetO <- zscore_net_joiner(sexlvlProp50ZO,nets_mix_clean10kO,spec_all,"O")
 zNetS <- zscore_net_joiner(sexlvlProp50ZS,nets_mix_clean10kS,spec_all,"S")
 
+save(zNetO,file='data/zNetO.RData')
+save(zNetS,file='data/zNetS.RData')
 
+pb_upload('data/zNetO.RData',
+          name="zNetO.RData",
+          tag='data.v.1')
+pb_upload('data/zNetS.RData',
+          name="zNetS.RData",
+          tag='data.v.1')
 
 ##Test: Do network-level metrics differ between the observed and simulated networks?
 

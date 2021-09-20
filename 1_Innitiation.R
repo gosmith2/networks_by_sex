@@ -197,6 +197,6 @@ bind_rows(select(spec.y,keeps),
 #save compiled dataset, upload to release
 save(spec_all,file='data/spec_all.RData')
 
-pb_upload("data/spec_all.RData",
-          name="spec_all.RData",
-          tag="data.v.1")
+#pb_upload("data/spec_all.RData",
+#          name="spec_all.RData",
+#          tag="data.v.1")

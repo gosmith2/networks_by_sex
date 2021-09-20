@@ -146,13 +146,13 @@ nets_mix_clean10kS <- mclapply(nets_mix_S10k, function(x){
 
 #save the networks themselves and upload them
 save(nets_mix_clean10kO, file = 'data/nets_mix_clean10kO.RData')
-pb_upload("data/nets_mix_clean10kO.RData",
-          name="nets_mix_clean10kO.RData",
-          )
+#pb_upload("data/nets_mix_clean10kO.RData",
+#          name="nets_mix_clean10kO.RData",
+#          )
 save(nets_mix_clean10kS, file = 'data/nets_mix_clean10kS.RData')
-pb_upload("data/nets_mix_clean10kS.RData",
-          name="nets_mix_clean10kS.RData",
-)
+#pb_upload("data/nets_mix_clean10kS.RData",
+#          name="nets_mix_clean10kS.RData",
+#)
 
 
 
